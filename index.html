@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Marigold HMS</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Marigold">
+    <meta name="theme-color" content="#D4AF37">
+
+    <style>
+    .screen { display: none; }
+    .screen.active { display: flex; }
+</style>
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h1>MARIGOLD</h1>
+        <p>Thermal & Spa</p>
+    </div>
+
+   <div class="screen active" id="loginScreen" style="padding: 10px; gap: 5px;">
+    <div style="text-align: center; margin-bottom: 5px; font-weight: 700; color: #555; font-size: 14px;">Minibar Personeli Girişi</div>
+    <div class="pin-display" id="pinDisplay" style="margin: 5px 0; font-size: 20px; letter-spacing: 10px;"></div>
+    <div class="pin-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">
+            <button class="pin-btn" onclick="pressPin('1')">1</button>
+            <button class="pin-btn" onclick="pressPin('2')">2</button>
+            <button class="pin-btn" onclick="pressPin('3')">3</button>
+            <button class="pin-btn" onclick="pressPin('4')">4</button>
+            <button class="pin-btn" onclick="pressPin('5')">5</button>
+            <button class="pin-btn" onclick="pressPin('6')">6</button>
+            <button class="pin-btn" onclick="pressPin('7')">7</button>
+            <button class="pin-btn" onclick="pressPin('8')">8</button>
+            <button class="pin-btn" onclick="pressPin('9')">9</button>
+            <button class="pin-btn" style="background:#f5f5f5; font-size:13px;" onclick="clearPin()">Sil</button>
+            <button class="pin-btn" onclick="pressPin('0')">0</button>
+            <button class="pin-btn" style="background:var(--marigold-cream); color:var(--marigold-gold); font-size:13px;" onclick="submitLogin()">Giriş</button>
+        </div>
+        <div class="login-toggle">
+            <span class="toggle-link" onclick="switchScreen('adminLoginScreen')">Yönetici / Ofis Paneline Geç</span>
+        </div>
+    </div>
+
+    <div class="screen" id="adminLoginScreen">
+        <div style="text-align: center; margin-bottom: 20px; font-weight: 700; color: #555;">Yönetici Giriş Paneli</div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label>E-Posta</label>
+            <input type="email" class="form-control" id="adminEmail" value="minibar@marigold.com">
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label>Şifre</label>
+            <input type="password" class="form-control" id="adminPass" value="marigold16">
+        </div>
+        <button class="btn" onclick="loginAdmin()">Yönetim Paneline Giriş Yap</button>
+        <div class="login-toggle">
+            <span class="toggle-link" onclick="switchScreen('loginScreen')">Minibar Personeli Paneline Dön</span>
+        </div>
+    </div>
+
+   <div class="screen" id="staffScreen">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:700;">
+            <span>👤 Personel: 1453</span>
+            <span style="color:var(--marigold-gold); cursor:pointer;" onclick="logout()">Çıkış</span>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>Kat Seçiniz</label>
+                <select class="form-control" id="floorSelect" onchange="filterRoomsByFloor()">
+                    <option value="all">Tüm Katlar</option>
+                    <option value="1">1. Kat</option>
+                    <option value="2">2. Kat</option>
+                    <option value="3">3. Kat</option>
+                    <option value="4">4. Kat</option>
+                    <option value="5">5. Kat</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Oda Seçiniz</label>
+               <select class="form-control" id="roomSelect" onchange="loadRoomSpecificProducts()" onfocus="if(this.options.length===0) filterRoomsByFloor()"></select>
+            </div>
+        </div>
+
+        <div style="font-size:11px; font-weight:700; color:#666; text-transform:uppercase; margin-bottom:5px;">Oda Ürün Durumu ve Eksilen Girişi</div>
+        <div class="product-list" id="htmlProductList"></div>
+
+        <div style="margin-top:auto; padding-top:10px;">
+            <div class="camera-wrapper">
+                <button class="btn-outline" onclick="document.querySelector('.camera-input').click()">
+📸 Minibar Fotoğrafı Çek
+</button>
+                <input type="file" accept="image/*" capture="environment" class="camera-input" onchange="previewImage(event)">
+                <img id="camPreview" src="" alt="Önizleme">
+            </div>
+            <button class="btn" onclick="sendToAdmin()">💾 Odayı Kaydet ve Ofise Gönder</button>
+        </div>
+    </div>
+
+    <div class="screen" id="cameraScreen">
+        <div style="padding: 20px; text-align: center; background: white; border-radius: 10px; margin: 20px;">
+            <h3>📸 İkmal (Dolu) Fotoğrafı Yükle</h3>
+            <p style="font-size: 13px; color: #666;">Bilgisayardan minibar fotoğrafını seçin:</p>
+            
+           <input type="file" id="fileInputReplenish" accept="image/*" onchange="handleFileSelect(event)" style="margin-top:15px;" onclick="this.value=null;">
+            
+            <button class="btn" style="margin-top:20px; width:100%; background:#6c757d;" onclick="switchScreen('staffScreen')">İptal / Geri Dön</button>
+        </div>
+    </div>
+    <div class="screen" id="adminDashboard">
+    <div class="admin-header">
+        <div class="admin-title">Ofis Onay Havuzu</div>
+        <span style="font-size:12px; color:red; cursor:pointer; font-weight:700;" onclick="logout()">Güvenli Çıkış</span>
+    </div>
+    <div id="noDataText" style="text-align:center; color:#999; margin-top:5px; font-style:italic; font-size:13px; margin-bottom:5px;">
+        Henüz yeni bir minibar kontrol bildirimi yok.
+    </div>
+    <div class="admin-scroll-area" id="adminCardsContainer"></div>
+    
+    <div style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee;">
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <div style="flex: 1;">
+                <label style="font-size: 10px; display: block; margin-bottom: 2px;">Başlangıç:</label>
+                <input type="date" id="startDate" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 10px; display: block; margin-bottom: 2px;">Bitiş:</label>
+                <input type="date" id="endDate" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+        </div>
+     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; margin-bottom:6px;">
+
+    <div style="background:#f8f8f8; border:1px solid #ddd; border-radius:5px; text-align:center; padding:5px;">
+        <div style="font-size:10px;">📦 Satış</div>
+        <div id="todayTotalQty" style="font-size:11px; font-weight:bold;">0</div>
+    </div>
+
+    <div style="background:#f8f8f8; border:1px solid #ddd; border-radius:5px; text-align:center; padding:5px;">
+        <div style="font-size:10px;">💰 Ciro</div>
+        <div id="todayTotalRevenue" style="font-size:11px; font-weight:bold;">0 TL</div>
+    </div>
+
+    <div style="background:#f8f8f8; border:1px solid #ddd; border-radius:5px; text-align:center; padding:5px;">
+        <div style="font-size:10px;">⭐ En Çok Satan</div>
+        <div id="topSellingProduct" style="font-size:11px; font-weight:bold;">-</div>
+    </div>
+
+</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+        <button onclick="clearApprovedHistory()" style="background:#dc3545; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:11px;">
+🗑️ Geçmiş
+</button>
+
+       <button onclick="clearPoolHistory()" style="background:#fd7e14; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:11px;">
+🧹 Havuz
+</button>
+
+        <button onclick="clearRoomMemory()" style="background:#6f42c1; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:11px;">
+🏨 Oda Hafızası
+</button>
+        <button onclick="generateExcelReport()" style="background:#28a745; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:11px;">
+📊 Excel
+</button>
+
+<button onclick="exportData()" style="background:#c9a227; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:11px;">
+💾 Yedek
+</button>
+
+<button onclick="document.getElementById('fileInput').click()" style="background:#d4af37; color:white; border:none; padding:5px; border-radius:5px; cursor:pointer; font-size:11px;">
+📂 Yükle
+</button>
+    </div>
+    <input type="file" id="fileInput" style="display:none" onchange="importData(event)">
+
+   <div
+onclick="
+const panel=document.getElementById('approvedPanel');
+panel.classList.toggle('hidden');
+
+document.getElementById('approvedArrow').innerText=
+panel.classList.contains('hidden')
+?'▼'
+:'▲';
+"
+style="
+font-family:'Playfair Display', serif;
+font-size:14px;
+font-weight:bold;
+color:var(--marigold-dark);
+cursor:pointer;
+user-select:none;
+margin-bottom:8px;
+">
+
+✅ Onaylanan Kayıtlar
+
+<br>
+
+<span id='approvedArrow'>▼</span>
+
+</div>
+
+<div id="approvedPanel">
+
+    <div style="margin-bottom:10px;">
+        <label style="font-size:13px; cursor:pointer;">
+            <input type="checkbox"
+                   id="showTodayOnly"
+                   onchange="renderApprovedRecords()">
+            Sadece Bugünkü Kayıtları Göster
+        </label>
+    </div>
+
+    <div style="margin-bottom:10px;">
+        <input
+            type="text"
+            id="roomSearch"
+            placeholder="🔍 Oda Ara..."
+            onkeyup="renderApprovedRecords()"
+            style="
+                width:100%;
+                padding:6px;
+                border:1px solid #ccc;
+                border-radius:5px;
+                font-size:12px;
+            ">
+    </div>
+
+    <div class="admin-scroll-area" id="approvedContainer"></div>
+
+</div>
+
+    <div class="skt-manager-section">
+        <div
+     onclick="
+const panel =
+document.getElementById('fifoPanel');
+
+panel.classList.toggle('hidden');
+
+document.getElementById('fifoArrow').innerText =
+panel.classList.contains('hidden')
+? '▼'
+: '▲';
+"
+        style="font-family:'Playfair Display', serif; font-size:14px; font-weight:bold; color:var(--marigold-dark); display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+           <span id="fifoTitle">
+📦 Depo Çoklu Parti (FIFO) Stok Yönetimi
+<br>
+<small id="fifoSummary"></small>
+<br>
+<span id="fifoArrow">▼</span>
+</span>
+            <button onclick="event.stopPropagation();addNewPartyRow();" style="background:var(--marigold-gold); color:white; border:none; padding:2px 8px; font-size:11px; border-radius:4px; cursor:pointer;">+ Yeni Parti Ekle</button>
+        </div>
+        <div id="fifoPanel" class="hidden">
+         <div class="skt-table-wrapper">
+            <table class="skt-table">
+                <thead>
+                    <tr>
+                        <th>Ürün Adı</th>
+                        <th>SKT</th>
+                        <th>Stok (Adet)</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="sktAdminTableBody"></tbody>
+            </table>
+        </div>
+        <button class="btn" style="margin-top: 6px; padding: 10px; font-size:13px; background: linear-gradient(135deg, #444 0%, #222 100%);" onclick="saveAllDepotParties()">💾 Tüm Depo Stok ve Partilerini Kaydet</button>
+    </div>
+</div>
+<div style="border-top:1px dashed #d8c08c; margin-top:10px; padding-top:10px;">
+
+    <div
+        onclick="
+document.getElementById('passwordPanel').classList.toggle('hidden');
+this.querySelector('.passwordArrow').innerText =
+document.getElementById('passwordPanel').classList.contains('hidden')
+? '▼'
+: '▲';
+"
+style="
+    font-family:'Playfair Display', serif;
+    font-size:14px;
+    font-weight:bold;
+    color:var(--marigold-dark);
+    cursor:pointer;
+    user-select:none;
+    margin-bottom:8px;
+">
+   🔑 Şifre Değiştirme
+<br>
+<span class="passwordArrow">▼</span>
+</div>
+
+    <div id="passwordPanel" class="hidden">
+
+        <input
+            type="text"
+            id="newPin"
+            placeholder="Yeni Personel PIN (Örn: 1234)"
+            style="width:100%; margin-bottom:5px; padding:5px; border:1px solid #ccc; border-radius:4px;"
+        >
+
+        <input
+            type="text"
+            id="newAdminPass"
+            placeholder="Yeni Yönetici Şifresi"
+            style="width:100%; margin-bottom:5px; padding:5px; border:1px solid #ccc; border-radius:4px;"
+        >
+
+        <button
+            class="btn"
+            style="width:100%; background:#2e7d32; color:white; padding:8px; border:none; border-radius:4px;"
+            onclick="updateCredentials()"
+        >
+            Şifreleri Güncelle
+        </button>
+
+    </div>
+
+</div>
+<script src="core/storage.js"></script>
+<script src="core/state.js"></script>
+<script src="core/helpers.js"></script>
+<script src="core/security.js"></script>
+
+<script src="data/rooms.js"></script>
+<script src="data/products.js"></script>
+
+<script src="modules/backup.js"></script>
+<script src="modules/reports.js"></script>
+<script src="modules/stock.js"></script>
+<script src="modules/photo.js"></script>
+<script src="modules/admin.js"></script>
+<script src="modules/staff.js"></script>
+<script src="modules/auth.js"></script>
+<script src="modules/excel.js"></script>
+
+<script src="app.js"></script>
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./service-worker.js");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+const productsBase = [
+    { id: "gofret", name: "GOFRET", price: 100.00, stock: 20 },
+    { id: "bitter", name: "BİTTER ÇİKOLATA", price: 140.00, stock: 20 },
+    { id: "sutlu", name: "SÜTLÜ ÇİKOLATA", price: 140.00, stock: 20 },
+    { id: "sakiz", name: "NANELİ SAKIZ", price: 140.00, stock: 20 },
+    { id: "mms", name: "M&M’S DRAJE", price: 170.00, stock: 20 },
+    { id: "kruvasan", name: "KRUVASAN", price: 140.00, stock: 20 },
+    { id: "fistik", name: "FISTIK", price: 170.00, stock: 20 },
+    { id: "findik", name: "FINDIK İÇİ", price: 340.00, stock: 20 },
+    { id: "potatoes", name: "MASTER POTATOES", price: 380.00, stock: 20 },
+    { id: "meyvesuyu", name: "MEYVE SUYU", price: 140.00, stock: 20 },
+    { id: "colazero", name: "COCA COLA ZERO", price: 160.00, stock: 20 },
+    { id: "cola", name: "COCA COLA", price: 160.00, stock: 20 },
+    { id: "gazoz", name: "ULUDAĞ GAZOZ", price: 140.00, stock: 20 },
+    { id: "portakal", name: "ULUDAĞ PORTAKAL", price: 140.00, stock: 20 },
+    { id: "su", name: "CAM ŞİŞE SU", price: 70.00, stock: 20 },
+    { id: "soda", name: "SODA", price: 80.00, stock: 20 },
+    { id: "enerji", name: "ENERJİ İÇECEĞİ", price: 210.00, stock: 20 },
+    { id: "bomonti", name: "BOMONTİ FİLTRESİZ 50 CL", price: 390.00, stock: 20 },
+    { id: "sarapbeyaz", name: "BEYAZ ŞARAP 18.5 CL", price: 700.00, stock: 20 },
+    { id: "sarapkirmizi", name: "KIRMIZI ŞARAP 18.5 CL", price: 700.00, stock: 20 },
+    { id: "kondom", name: "KONDOM", price: 210.00, stock: 20 }
+];
