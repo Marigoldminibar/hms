@@ -117,10 +117,29 @@ function approveAction(recordId) {
                 party.qty = 0;
             }
         }
+     const newestParty = depotParties
+    .filter(
+        p => p.productId === soldItem.productId && p.qty > 0
+    )
+    .sort(
+        (a, b) => new Date(a.expiry) - new Date(b.expiry)
+    )[0];
+
+if (newestParty) {
+    if (!roomSktDatabase[currentRecord.room]) {
+        roomSktDatabase[currentRecord.room] = {};
+    }
+
+    roomSktDatabase[currentRecord.room][soldItem.productId] =
+        newestParty.expiry;
+}
     });
 
     saveData("marigold_depot_parties_v2", depotParties);
-
+saveData(
+    "marigold_rooms_skt_db_v2",
+    roomSktDatabase
+);
     approvedRecords.push({
         ...currentRecord,
         photo: currentRecord.photo,
