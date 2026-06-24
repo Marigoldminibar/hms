@@ -1,4 +1,5 @@
- function renderAdminCards() {
+function renderAdminCards() {
+
     const container = document.getElementById("adminCardsContainer");
     const noDataText = document.getElementById("noDataText");
 
@@ -11,15 +12,24 @@
 
     noDataText.style.display = "none";
 
-    globalRoomsPool.forEach(item => {
-        let previewHtml = "<ul>";
+     globalRoomsPool.forEach(item => {
 
-        item.soldItemsList.forEach(soldItem => {
-            const product = productsBase.find(
-                p => p.id === soldItem.productId
-            );
+    const accordionId = `pool-${item.id}`;
 
-            previewHtml += `
+    let previewHtml = "<ul>";
+let totalPrice = 0;
+
+item.soldItemsList.forEach(soldItem => {
+
+    const product = productsBase.find(
+        p => p.id === soldItem.productId
+    );
+
+    if(product){
+        totalPrice += product.price * soldItem.soldQty;
+    }
+
+    previewHtml += `
                 <li>
                     <strong>${product ? product.name : soldItem.productId}:</strong>
                     ${soldItem.soldQty} adet düşecek.
@@ -30,7 +40,38 @@
         previewHtml += "</ul>";
 
         container.innerHTML += `
-            <div class="notification-card" id="card-${item.id}">
+             <div class="notification-card">
+
+<div
+onclick="
+const panel=document.getElementById('${accordionId}');
+const arrow=document.getElementById('arrow-${item.id}');
+
+panel.classList.toggle('hidden');
+
+arrow.innerText =
+panel.classList.contains('hidden')
+? '▼'
+: '▲';
+"
+style="
+cursor:pointer;
+font-weight:bold;
+padding:8px;
+">
+
+📬 ${item.room}<br>
+
+<span
+id="arrow-${item.id}"
+style="margin-left:18px;"
+>
+▼
+</span>
+
+</div>
+
+<div id="${accordionId}" class="hidden">
                 <div style="font-weight:700; color:var(--marigold-gold); margin-bottom:8px; font-size:15px;">
                     ⚠️ ODA BİLDİRİMİ
                 </div>
@@ -43,28 +84,44 @@
                     <strong>Eksilen Ürünler:</strong>
                 </div>
 
-                <div class="log-item" style="padding-left:10px; color:#444;">
-                    ${item.details}
-                </div>
+               <div class="log-item" style="padding-left:10px; color:#444;">
+    ${item.details}
+</div>
 
-                <div style="margin-top:10px; font-size:11px; background:#f0f0f0; padding:8px; border-radius:5px;">
-                    <strong>FIFO Stok Planı:</strong>
-                    ${previewHtml}
-                </div>
+<div class="log-item"
+style="
+padding-left:10px;
+font-weight:bold;
+color:#c9a227;
+margin-top:8px;
+">
+💰 TOPLAM TUTAR: ${totalPrice.toFixed(2)} TL
+</div>
+
+${!isReceptionLoggedIn ? `
+<div style="margin-top:10px; font-size:11px; background:#f0f0f0; padding:8px; border-radius:5px;">
+    <strong>FIFO Stok Planı:</strong>
+    ${previewHtml}
+</div>
+` : ``}
 
                 ${item.photo ? `
                     <img src="${item.photo}" style="width:100%; margin-top:10px; border-radius:10px;">
                 ` : ""}
 
-                <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button class="btn" onclick="approveAction(${item.id})">
-                        👍 Onayla
-                    </button>
+                ${!isReceptionLoggedIn ? `
+<div style="display:flex; gap:10px; margin-top:15px;">
+    <button class="btn" onclick="approveAction(${item.id})">
+        👍 Onayla
+    </button>
 
-                    <button class="btn btn-outline" onclick="rejectAction(${item.id})">
-                        ❌ Reddet
-                    </button>
-                </div>
+    <button class="btn btn-outline" onclick="rejectAction(${item.id})">
+        ❌ Reddet
+    </button>
+</div>
+` : `
+
+`}
             </div>
         `;
     });
@@ -117,34 +174,48 @@ function approveAction(recordId) {
                 party.qty = 0;
             }
         }
-     const newestParty = depotParties
-    .filter(
-        p => p.productId === soldItem.productId && p.qty > 0
-    )
-    .sort(
-        (a, b) => new Date(a.expiry) - new Date(b.expiry)
-    )[0];
+       const newestParty = depotParties
+            .filter(
+                    p => p.productId === soldItem.productId && p.qty > 0
+              )
+               .sort(
+                    (a, b) => new Date(a.expiry) - new Date(b.expiry)
+            )[0];
 
-if (newestParty) {
-    if (!roomSktDatabase[currentRecord.room]) {
-        roomSktDatabase[currentRecord.room] = {};
-    }
+        if (newestParty) {
+               if (!roomSktDatabase[currentRecord.room]) {
+                     roomSktDatabase[currentRecord.room] = {};
+               }
 
-    roomSktDatabase[currentRecord.room][soldItem.productId] =
-        newestParty.expiry;
-}
+               roomSktDatabase[currentRecord.room][soldItem.productId] =
+                         newestParty.expiry;
+        }
     });
+    
+   saveData("marigold_depot_parties_v2", depotParties);
 
-    saveData("marigold_depot_parties_v2", depotParties);
+if (typeof saveDepotPartiesToFirebase === "function") {
+    saveDepotPartiesToFirebase();
+}
+
 saveData(
     "marigold_rooms_skt_db_v2",
     roomSktDatabase
 );
-    approvedRecords.push({
-        ...currentRecord,
-        photo: currentRecord.photo,
-        approvedDate: new Date().toLocaleString("tr-TR")
-    });
+    const approvedRecord = {
+    ...currentRecord,
+    photo: currentRecord.photo,
+    approvedDate: new Date().toLocaleString("tr-TR")
+};
+
+approvedRecords.push(approvedRecord);
+    if (
+    typeof saveApprovedRecordToFirebase === "function"
+) {
+    saveApprovedRecordToFirebase(
+        approvedRecord
+    );
+}
 
     if (!roomMemory[currentRecord.room]) {
         roomMemory[currentRecord.room] = {};
@@ -155,7 +226,16 @@ saveData(
     roomMemory[currentRecord.room].usageDetails = currentRecord.details;
 
     saveData("marigold_room_memory", roomMemory);
-    saveData("marigold_approved", approvedRecords);
+
+saveData("marigold_approved", approvedRecords);
+
+if (typeof saveRoomMemoryToFirebase === "function") {
+    saveRoomMemoryToFirebase();
+}
+
+if (typeof saveRoomSktToFirebase === "function") {
+    saveRoomSktToFirebase();
+}
 
     globalRoomsPool = globalRoomsPool.filter(
         item => item.id !== recordId
@@ -163,11 +243,38 @@ saveData(
 
     saveData("marigold_pool", globalRoomsPool);
 
-    renderAdminCards();
-    renderApprovedRecords();
-    buildSktManagerForAdmin();
-    updateDashboardSummary();
-    checkStockLevels();
+if (currentRecord.firebaseId) {
+
+    import(
+        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+    )
+    .then(({ deleteDoc, doc }) => {
+
+        return deleteDoc(
+            doc(
+                db,
+                "minibar_records",
+                currentRecord.firebaseId
+            )
+        );
+
+    })
+    .catch(error => {
+
+        console.error(
+            "Firebase Silme Hatası:",
+            error
+        );
+
+    });
+
+}
+
+renderAdminCards();
+renderApprovedRecords();
+buildSktManagerForAdmin();
+updateDashboardSummary();
+checkStockLevels();
 
     alert(`${currentRecord.room} onaylandı, stoklar güncellendi.`);
 }

@@ -69,13 +69,14 @@ function saveReplenishPhoto(photoData, roomNumber) {
         new Date().toLocaleString("tr-TR");
 
     saveData(
-        "marigold_room_memory",
-        roomMemory
-    );
+    "marigold_room_memory",
+    roomMemory
+);
 
-    alert(
-        `${roomNumber} nolu oda için ikmal fotoğrafı başarıyla kaydedildi!`
-    );
+
+alert(
+    `${roomNumber} nolu oda için ikmal fotoğrafı başarıyla kaydedildi!`
+);
 
     renderAdminCards();
     renderApprovedRecords();

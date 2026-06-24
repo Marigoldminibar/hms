@@ -18,7 +18,7 @@ if (savedLock) {
 function resetIdleTimer() {
     idleTime = 0;
 }
-
+/*
 setInterval(() => {
     idleTime++;
     if (idleTime >= idleLimit) {
@@ -27,3 +27,4 @@ setInterval(() => {
         idleTime = 0;
     }
 }, 60000); // 1 dakikada bir kontrol et
+*/

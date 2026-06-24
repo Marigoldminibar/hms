@@ -18,6 +18,7 @@ let quantities = {};
 
 let isAdminLoggedIn = false;
 let isStaffLoggedIn = false;
+let isReceptionLoggedIn = false;
 
 let adminLoginAttempts = 0;
 let adminLockedUntil = 0;

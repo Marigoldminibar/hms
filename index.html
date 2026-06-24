@@ -124,7 +124,7 @@
     </div>
     <div class="admin-scroll-area" id="adminCardsContainer"></div>
     
-    <div style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee;">
+     <div id="dashboardTools" style="margin: 15px 0; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee;">
         <div style="display: flex; gap: 10px; margin-bottom: 10px;">
             <div style="flex: 1;">
                 <label style="font-size: 10px; display: block; margin-bottom: 2px;">Başlangıç:</label>
@@ -277,7 +277,8 @@ panel.classList.contains('hidden')
         <button class="btn" style="margin-top: 6px; padding: 10px; font-size:13px; background: linear-gradient(135deg, #444 0%, #222 100%);" onclick="saveAllDepotParties()">💾 Tüm Depo Stok ve Partilerini Kaydet</button>
     </div>
 </div>
-<div style="border-top:1px dashed #d8c08c; margin-top:10px; padding-top:10px;">
+<div id="passwordSection"
+style="border-top:1px dashed #d8c08c; margin-top:10px; padding-top:10px;">
 
     <div
         onclick="
@@ -345,11 +346,35 @@ style="
 <script src="modules/auth.js"></script>
 <script src="modules/excel.js"></script>
 
+<script src="firebase.js"></script>
+
 <script src="app.js"></script>
-<script>
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js");
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+
+import {
+    getFirestore,
+    collection,
+    addDoc
 }
+from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+const app =
+    initializeApp(window.firebaseConfig);
+
+const db =
+    getFirestore(app);
+
+window.firebaseApp = app;
+window.db = db;
+window.collection = collection;
+window.addDoc = addDoc;
+
+console.log("Firebase Bağlandı");
+
 </script>
 </body>
 </html>

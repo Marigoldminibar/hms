@@ -106,15 +106,19 @@ function loadRoomSpecificProducts() {
     roomSktDatabase[roomKey][productId] = newDate;
 
     saveData(
-        "marigold_rooms_skt_db_v2",
-        roomSktDatabase
-    );
+    "marigold_rooms_skt_db_v2",
+    roomSktDatabase
+);
 
-    loadRoomSpecificProducts();
+if (typeof saveRoomSktToFirebase === "function") {
+    saveRoomSktToFirebase();
+}
 
-    alert(
-        `${roomKey} için tarih odabaşlı kaydedildi. Depo stokları etkilenmedi.`
-    );
+loadRoomSpecificProducts();
+
+alert(
+    `${roomKey} için tarih odabaşlı kaydedildi. Depo stokları etkilenmedi.`
+);
 }
 function changeQty(itemId, val) {
     quantities[itemId] =

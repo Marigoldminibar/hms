@@ -53,16 +53,50 @@ function initSystem() {
         }
     });
 
-    saveData("marigold_room_memory", roomMemory);
-    saveData("marigold_rooms_skt_db_v2", roomSktDatabase);
+   saveData("marigold_room_memory", roomMemory);
+saveData("marigold_rooms_skt_db_v2", roomSktDatabase);
 
-    productsBase.forEach(p => {
-        quantities[p.id] = 0;
-    });
+productsBase.forEach(p => {
+    quantities[p.id] = 0;
+});
 
-    filterRoomsByFloor();
-    loadRoomSpecificProducts();
+filterRoomsByFloor();
+loadRoomSpecificProducts();
+
+if (typeof listenDepotParties === "function") {
+    listenDepotParties();
 }
+
+if (typeof loadFirebasePool === "function") {
+    loadFirebasePool();
+}
+
+if (typeof listenFirebasePool === "function") {
+    listenFirebasePool();
+}
+
+if (typeof listenRoomSkt === "function") {
+    listenRoomSkt();
+}
+
+if (typeof listenSettings === "function") {
+    listenSettings();
+}
+/*
+if (typeof listenApprovedRecords === "function") {
+    listenApprovedRecords();
+}
+*/
+if (typeof listenApprovedRecordsCollection === "function") {
+    listenApprovedRecordsCollection();
+}
+}
+
+/*
+if (typeof loadFirebasePool === "function") {
+    loadFirebasePool();
+}
+*/
     // YÖNETİCİNİN TÜM LİSTEYİ ELLE DÜZENLEYİP KAYDETMESİ
     function saveAllDepotParties() {
     for (const party of depotParties) {
@@ -101,15 +135,19 @@ function initSystem() {
         party.qty = qty;
     }
 
-    saveData(
-        "marigold_depot_parties_v2",
-        depotParties
-    );
+   saveData(
+    "marigold_depot_parties_v2",
+    depotParties
+);
 
-    buildSktManagerForAdmin();
-    checkStockLevels();
+if (typeof saveDepotPartiesToFirebase === "function") {
+    saveDepotPartiesToFirebase();
+}
 
-    alert("Depo parti stokları kaydedildi.");
+buildSktManagerForAdmin();
+checkStockLevels();
+
+alert("Depo parti stokları kaydedildi.");
 }
 
     function filterRoomsByFloor() {
@@ -129,24 +167,68 @@ function initSystem() {
         loadRoomSpecificProducts();
     }
 
-  function switchScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
-    
-   if(screenId === 'adminDashboard') {
+   function switchScreen(screenId) {
 
-    if (!isAdminLoggedIn) {
-        alert("Lütfen önce yönetici girişi yapın.");
-        return;
+    document.querySelectorAll('.screen').forEach(
+        s => s.classList.remove('active')
+    );
+
+    document.getElementById(screenId)
+        .classList.add('active');
+
+    if(screenId === 'adminDashboard') {
+
+        if (!isAdminLoggedIn && !isReceptionLoggedIn) {
+            alert("Lütfen önce yönetici girişi yapın.");
+            return;
+        }
+
+        renderAdminCards();
+        renderApprovedRecords();
+        buildSktManagerForAdmin();
+        updateDashboardSummary();
+        checkStockLevels();
+
+       if(isReceptionLoggedIn) {
+
+    document.querySelector(".skt-manager-section")
+    ?.style.setProperty("display","none");
+
+    const passwordSection =
+    document.getElementById("passwordSection");
+
+    if(passwordSection){
+        passwordSection.style.display = "none";
     }
 
-    renderAdminCards();
-    renderApprovedRecords();
-    buildSktManagerForAdmin();
-    updateDashboardSummary();
-    checkStockLevels();
-}
-    
+    const approvedPanel =
+    document.getElementById("approvedPanel");
+
+    if(approvedPanel){
+        approvedPanel.style.display = "none";
+    }
+
+    const dashboardTools =
+    document.getElementById("dashboardTools");
+
+    if(dashboardTools){
+        dashboardTools.style.display = "none";
+    }
+
+} else {
+
+            document.querySelector(".skt-manager-section")
+            ?.style.setProperty("display","block");
+
+            const passwordSection =
+            document.getElementById("passwordSection");
+
+            if(passwordSection){
+                passwordSection.style.display = "block";
+            }
+        }
+    }
+
     if(screenId === 'staffScreen') {
         loadRoomSpecificProducts();
     }
@@ -188,17 +270,41 @@ function initSystem() {
    let newRecord = {
     id: Date.now(),
     room: document.getElementById("roomSelect").value,
-    details: detailsHtml + `<br><strong style="color:var(--marigold-gold); font-size:14px;">Toplam Tutar: ${totalCost.toFixed(2)} TL</strong>`,
+    details: detailsHtml,
     photo: hasPhoto ? currentPhotoData : null,
     soldItemsList: itemsSold
 };
 
-globalRoomsPool.push(newRecord);
+addDoc(
+    collection(db, "minibar_records"),
+    {
+        id: newRecord.id,
+        room: newRecord.room,
+        details: newRecord.details,
+        soldItemsList: newRecord.soldItemsList,
+        photo: newRecord.photo,
+        createdAt: new Date().toISOString()
+    }
+)
+.then(() => {
 
-saveData("marigold_pool", globalRoomsPool);
+    alert(
+        newRecord.room +
+        " verileri Firebase'e gönderildi!"
+    );
 
-alert(newRecord.room + " verileri onay havuzuna gönderildi!");
-logout();
+    logout();
+
+})
+.catch(err => {
+
+    console.error(err);
+
+    alert(
+        "Firebase kayıt hatası!"
+    );
+
+});
 }
 
 // --- SİSTEMİ BAŞLAT VE GÜVENLİK BEKÇİSİNİ AKTİF ET ---

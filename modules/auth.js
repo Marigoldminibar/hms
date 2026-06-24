@@ -42,6 +42,21 @@ function submitLogin() {
     pass === savedPass
 ) {
     isAdminLoggedIn = true;
+    isReceptionLoggedIn = false;
+
+    adminLoginAttempts = 0;
+    adminLockedUntil = 0;
+
+    switchScreen("adminDashboard");
+    return;
+}
+
+if (
+    mail === "reception@marigold.com" &&
+    pass === "mari678"
+) {
+    isReceptionLoggedIn = true;
+    isAdminLoggedIn = false;
 
     adminLoginAttempts = 0;
     adminLockedUntil = 0;
@@ -109,12 +124,17 @@ function updateCredentials() {
     const newPin = document.getElementById("newPin").value;
     const newAdminPass = document.getElementById("newAdminPass").value;
 
-    if (newPin && newPin.length > 0) {
-        saveData("marigold_pin", newPin);
-    }
-    if (newAdminPass && newAdminPass.length > 0) {
-        saveData("marigold_admin_pass", newAdminPass);
-    }
+  if (newPin && newPin.length > 0) {
+    saveData("marigold_pin", newPin);
+}
+
+if (newAdminPass && newAdminPass.length > 0) {
+    saveData("marigold_admin_pass", newAdminPass);
+}
+
+if (typeof saveSettingsToFirebase === "function") {
+    saveSettingsToFirebase();
+}
     
     if (newPin || newAdminPass) {
         alert("Şifreler başarıyla güncellendi!");
