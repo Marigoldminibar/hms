@@ -223,29 +223,8 @@ window.listenRoomSkt = async function () {
         }
     );
 };
-window.saveSettingsToFirebase = async function () {
 
-    if (!window.db) return;
-
-    const {
-        doc,
-        setDoc
-    } = await import(
-        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
-    );
-
-    await setDoc(
-        doc(db, "live_data", "settings"),
-        {
-            pin: loadData("marigold_pin") || "1453",
-            adminPass: loadData("marigold_admin_pass") || "marigold16",
-            updatedAt: new Date().toISOString()
-        }
-    );
-
-    console.log("Settings Firebase güncellendi.");
-};
-window.listenSettings = async function () {
+window.listenRoomMemory = async function () {
 
     if (!window.db) return;
 
@@ -257,32 +236,74 @@ window.listenSettings = async function () {
     );
 
     onSnapshot(
-        doc(db, "live_data", "settings"),
+        doc(db, "live_data", "room_memory"),
         (snapshot) => {
 
             if (!snapshot.exists()) return;
 
-            const data = snapshot.data();
+            const firebaseData = snapshot.data();
 
-            if (data.pin) {
-                saveData(
-                    "marigold_pin",
-                    data.pin
-                );
-            }
+            if (!firebaseData.data) return;
 
-            if (data.adminPass) {
-                saveData(
-                    "marigold_admin_pass",
-                    data.adminPass
-                );
-            }
+            roomMemory = firebaseData.data;
 
-            console.log(
-                "Canlı settings güncellendi."
+            saveData(
+                "marigold_room_memory",
+                roomMemory
             );
+
+            renderApprovedRecords();
+            updateDashboardSummary();
+
+            console.log("Canlı Room Memory güncellendi.");
         }
     );
+};
+
+window.saveSettingsToFirebase = async function () {
+
+    if (!window.db) return;
+
+    const {
+        doc,
+        getDoc,
+        setDoc
+    } = await import(
+        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+    );
+
+    const settingsRef =
+        doc(db, "live_data", "settings");
+
+    let currentSettings = {};
+
+    const snapshot =
+        await getDoc(settingsRef);
+
+    if (snapshot.exists()) {
+        currentSettings = snapshot.data();
+    }
+
+    await setDoc(settingsRef, {
+
+        ...currentSettings,
+
+        pin:
+            loadData("marigold_pin") || "",
+
+        receptionPass:
+            loadData("marigold_reception_pass") || "",
+
+        adminPass:
+            loadData("marigold_admin_pass") || "",
+
+        updatedAt:
+            new Date().toISOString()
+
+    });
+
+    console.log("Settings Firebase güncellendi.");
+
 };
 
 window.saveApprovedRecordToFirebase = async function (record) {
@@ -374,4 +395,49 @@ window.listenApprovedRecordsCollection = async function () {
             );
         }
     );
+};
+window.checkVersion = async function () {
+
+    console.log("1) checkVersion başladı");
+
+    try {
+
+        if (!window.db) {
+            console.log("2) DB YOK");
+            return;
+        }
+
+        const { doc, getDoc } = await import(
+            "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+        );
+
+        console.log("3) Firestore import tamam");
+
+        const ref = doc(db, "live_data", "settings");
+
+        const snap = await getDoc(ref);
+
+        console.log("4) Belge okundu:", snap.exists());
+
+        if (!snap.exists()) return;
+
+        const firebaseVersion = snap.data().version;
+
+        const localVersion = "0.0.0";
+
+        console.log("5) Firebase:", firebaseVersion);
+        console.log("6) Local:", localVersion);
+
+        if (firebaseVersion !== localVersion) {
+
+            alert("TEST: Güncelleme bulundu.");
+
+        }
+
+    } catch (e) {
+
+        console.error("CHECK VERSION HATASI:", e);
+
+    }
+
 };

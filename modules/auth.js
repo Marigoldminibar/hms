@@ -1,8 +1,12 @@
-function submitLogin() {
-    const savedPin =
-        loadData("marigold_pin") || "1453";
+async function submitLogin() {
+    const savedPin = loadData("marigold_pin");
+    
+if (!savedPin) {
+    alert("PIN henüz oluşturulmamış.");
+    return;
+}
 
-    if (currentPin === savedPin) {
+    if (await verifyPassword(currentPin, savedPin)) {
     clearPin();
 
     isStaffLoggedIn = true;
@@ -15,7 +19,7 @@ function submitLogin() {
     clearPin();
 }
 
-    function loginAdmin() {
+    async function loginAdmin() {
 
     if (Date.now() < adminLockedUntil) {
         const remainingMinutes =
@@ -32,28 +36,49 @@ function submitLogin() {
         document.getElementById("adminEmail").value;
 
     const pass =
-        document.getElementById("adminPass").value;
+        document.getElementById("adminPass").value;  
 
-    const savedPass =
-        loadData("marigold_admin_pass") || "marigold16";
+    const rememberEmail =
+    document.getElementById("rememberEmail").checked;
+
+if (rememberEmail) {
+    saveData(
+    "marigold_remember_email",
+    mail
+);
+} else {
+    saveData(
+    "marigold_remember_email",
+    ""
+);
+}
+
+   const savedPass = loadData("marigold_admin_pass");
+const receptionPass = loadData("marigold_reception_pass");
+
+if (!savedPass || !receptionPass) {
+    alert("Yönetici şifreleri henüz oluşturulmamış.");
+    return;
+}
 
     if (
     mail === "minibar@marigold.com" &&
-    pass === savedPass
+    await verifyPassword(pass, savedPass)
 ) {
-    isAdminLoggedIn = true;
-    isReceptionLoggedIn = false;
+   isAdminLoggedIn = true;
+isReceptionLoggedIn = false;
 
-    adminLoginAttempts = 0;
-    adminLockedUntil = 0;
+adminLoginAttempts = 0;
+adminLockedUntil = 0;
 
-    switchScreen("adminDashboard");
-    return;
+switchScreen("adminDashboard");
+hideSecurityUpgradeButton();
+return;
 }
 
 if (
     mail === "reception@marigold.com" &&
-    pass === "mari678"
+    await verifyPassword(pass, receptionPass)
 ) {
     isReceptionLoggedIn = true;
     isAdminLoggedIn = false;
@@ -61,8 +86,9 @@ if (
     adminLoginAttempts = 0;
     adminLockedUntil = 0;
 
-    switchScreen("adminDashboard");
-    return;
+   switchScreen("adminDashboard");
+hideSecurityUpgradeButton();
+return;
 }
 
     adminLoginAttempts++;
@@ -91,8 +117,9 @@ alert("Hatalı kullanıcı adı veya şifre!");
 
 function logout() {
 
-    isAdminLoggedIn = false;
-    isStaffLoggedIn = false;
+   isAdminLoggedIn = false;
+   isReceptionLoggedIn = false;
+   isStaffLoggedIn = false;
 
     productsBase.forEach(p => {
         quantities[p.id] = 0;
@@ -120,27 +147,59 @@ if (preview) {
     switchScreen("loginScreen");
 }
 
-function updateCredentials() {
-    const newPin = document.getElementById("newPin").value;
-    const newAdminPass = document.getElementById("newAdminPass").value;
+   function updateCredentials() {
 
-  if (newPin && newPin.length > 0) {
-    saveData("marigold_pin", newPin);
-}
+    const newPin =
+        document.getElementById("newPin").value;
 
-if (newAdminPass && newAdminPass.length > 0) {
-    saveData("marigold_admin_pass", newAdminPass);
-}
+    const newReceptionPass =
+        document.getElementById("newReceptionPass").value;
 
-if (typeof saveSettingsToFirebase === "function") {
-    saveSettingsToFirebase();
-}
+    const newAdminPass =
+        document.getElementById("newAdminPass").value;
+
+    if (newPin && newPin.length > 0) {
+        saveData("marigold_pin", newPin);
+    }
+
+    if (newReceptionPass && newReceptionPass.length > 0) {
+        saveData("marigold_reception_pass", newReceptionPass);
+    }
+
+    if (newAdminPass && newAdminPass.length > 0) {
+        saveData("marigold_admin_pass", newAdminPass);
+    }
+
+    if (typeof saveSettingsToFirebase === "function") {
+        saveSettingsToFirebase();
+    }
     
-    if (newPin || newAdminPass) {
+   if (
+    newPin ||
+    newReceptionPass ||
+    newAdminPass
+) {
         alert("Şifreler başarıyla güncellendi!");
         document.getElementById("newPin").value = "";
+        document.getElementById("newReceptionPass").value = "";
         document.getElementById("newAdminPass").value = "";
     } else {
         alert("Lütfen en az bir şifre alanı doldurun.");
     }
 }
+
+window.addEventListener("load", () => {
+
+   const savedEmail =
+    loadData("marigold_remember_email");
+
+    if (savedEmail) {
+
+        document.getElementById("adminEmail").value =
+            savedEmail;
+
+        document.getElementById("rememberEmail").checked =
+            true;
+    }
+
+});

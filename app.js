@@ -79,6 +79,10 @@ if (typeof listenRoomSkt === "function") {
     listenRoomSkt();
 }
 
+if (typeof listenRoomMemory === "function") {
+    listenRoomMemory();
+}
+
 if (typeof listenSettings === "function") {
     listenSettings();
 }
@@ -308,13 +312,28 @@ addDoc(
 }
 
 // --- SİSTEMİ BAŞLAT VE GÜVENLİK BEKÇİSİNİ AKTİF ET ---
-window.onload = function() { 
-    initSystem(); 
-    
+window.onload = async function () {
+
+    if (await isFirstSetup()) {
+        showSetupWizard();
+        return;
+    }
+
+   initSystem();
+
+setTimeout(() => {
+
+    if (typeof checkVersion === "function") {
+        checkVersion();
+    }
+
+}, 2000);
+
     document.onmousemove = resetIdleTimer;
     document.onkeypress = resetIdleTimer;
     document.onclick = resetIdleTimer;
     document.onscroll = resetIdleTimer;
+
 };
 
 // --- GÜVENLİK: OTOMATİK OTURUM KAPATMA (5 DAKİKA) ---
