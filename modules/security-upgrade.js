@@ -25,7 +25,6 @@ window.migratePasswordsToHash = async function () {
 
         // Hepsi zaten hash ise
         if (values.every(isHash)) {
-            alert("Sistem zaten SHA-256 güvenliğinde.");
             return;
         }
 
