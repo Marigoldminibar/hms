@@ -9,9 +9,10 @@ if (!savedPin) {
     if (await verifyPassword(currentPin, savedPin)) {
     clearPin();
 
-    isStaffLoggedIn = true;
+   isStaffLoggedIn = true;
+   window.devMode = false;
 
-    switchScreen("staffScreen");
+   switchScreen("staffScreen");
     return;
 }
 
@@ -65,8 +66,9 @@ if (!savedPass || !receptionPass) {
     mail === "minibar@marigold.com" &&
     await verifyPassword(pass, savedPass)
 ) {
-   isAdminLoggedIn = true;
-isReceptionLoggedIn = false;
+  isAdminLoggedIn = true;
+  window.devMode = true;
+  isReceptionLoggedIn = false;
 
 adminLoginAttempts = 0;
 adminLockedUntil = 0;
@@ -81,6 +83,7 @@ if (
     await verifyPassword(pass, receptionPass)
 ) {
     isReceptionLoggedIn = true;
+    window.devMode = false;
     isAdminLoggedIn = false;
 
     adminLoginAttempts = 0;
@@ -117,9 +120,11 @@ alert("Hatalı kullanıcı adı veya şifre!");
 
 function logout() {
 
-   isAdminLoggedIn = false;
-   isReceptionLoggedIn = false;
-   isStaffLoggedIn = false;
+    window.devMode = false;
+
+    isAdminLoggedIn = false;
+    isReceptionLoggedIn = false;
+    isStaffLoggedIn = false;
 
     productsBase.forEach(p => {
         quantities[p.id] = 0;
@@ -160,14 +165,17 @@ if (preview) {
 
   if (newPin && newPin.length > 0) {
     saveData("marigold_pin", await hashPassword(newPin));
+    saveData("marigold_password_migrated", true);
 }
 
 if (newReceptionPass && newReceptionPass.length > 0) {
     saveData("marigold_reception_pass", await hashPassword(newReceptionPass));
+    saveData("marigold_password_migrated", true);
 }
 
 if (newAdminPass && newAdminPass.length > 0) {
     saveData("marigold_admin_pass", await hashPassword(newAdminPass));
+    saveData("marigold_password_migrated", true);
 }
 
     if (typeof saveSettingsToFirebase === "function") {
