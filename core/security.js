@@ -1,79 +1,84 @@
-// GÜVENLİK: Şifreleri LocalStorage'a tanımlayan fonksiyon
+// =====================================================
+// Marigold HMS - Security Manager v1.0
+// =====================================================
+
+// -------------------------------
+// Güvenlik Kontrolü
+// -------------------------------
 function checkSystemSecurity() {
-    // Eğer şifreler hiç yoksa (ilk kurulum), varsayılanları şifreleyerek kaydet
-   // İlk kurulum kontrolü
-const hasPin = loadData("marigold_pin");
-const hasAdminPass = loadData("marigold_admin_pass");
 
-if (!hasPin || !hasAdminPass) {
-    console.warn("İlk kurulum tamamlanmamış. Varsayılan şifre oluşturulmuyor.");
+    // Admin kilidi varsa geri yükle
+    const savedLock = loadData("marigold_admin_locked_until");
+
+    if (savedLock) {
+        adminLockedUntil = savedLock;
+    }
+
+    // Gerekirse eski şifreleri SHA-256'ya dönüştür
+    if (!loadData("marigold_password_migrated")) {
+        migratePasswordsToHash();
+    }
 }
 
-const savedLock =
-    loadData("marigold_admin_locked_until");
-
-if (savedLock) {
-    adminLockedUntil = savedLock;
-}
-if (!loadData("marigold_password_migrated")) {
-    migratePasswordsToHash();
-}
-}
+// -------------------------------
+// Kullanıcı Hareketi
+// -------------------------------
 function resetIdleTimer() {
     idleTime = 0;
 }
+
 /*
 setInterval(() => {
+
     idleTime++;
+
     if (idleTime >= idleLimit) {
-        console.log("Güvenlik: Zaman aşımı, oturum kapatılıyor...");
-        logout(); 
+
+        console.log("Güvenlik: Oturum zaman aşımı.");
+
+        logout();
+
         idleTime = 0;
+
     }
-}, 60000); // 1 dakikada bir kontrol et
+
+}, 60000);
 */
 
 // -------------------------------
-// Şifre Migration (Bir Kez Çalışır)
+// SHA-256 Migration (Bir Kez)
 // -------------------------------
-
 async function migratePasswordsToHash() {
 
-    const migrated = loadData("marigold_password_migrated");
-
-    if (migrated) return;
-
-    const adminPass = loadData("marigold_admin_pass");
-    const receptionPass = loadData("marigold_reception_pass");
-    const staffPin = loadData("marigold_pin");
-
-    function isHash(value) {
-        return typeof value === "string" &&
-               /^[a-f0-9]{64}$/i.test(value);
+    if (loadData("marigold_password_migrated")) {
+        return;
     }
 
-    if (adminPass && !isHash(adminPass)) {
-        saveData(
-            "marigold_admin_pass",
-            await hashPassword(adminPass)
-        );
-    }
+    const passwords = [
+        "marigold_admin_pass",
+        "marigold_reception_pass",
+        "marigold_pin"
+    ];
 
-    if (receptionPass && !isHash(receptionPass)) {
-        saveData(
-            "marigold_reception_pass",
-            await hashPassword(receptionPass)
-        );
-    }
+    const isHash = value =>
+        typeof value === "string" &&
+        /^[a-f0-9]{64}$/i.test(value);
 
-    if (staffPin && !isHash(staffPin)) {
+    for (const key of passwords) {
+
+        const value = loadData(key);
+
+        if (!value) continue;
+
+        if (isHash(value)) continue;
+
         saveData(
-            "marigold_pin",
-            await hashPassword(staffPin)
+            key,
+            await hashPassword(value)
         );
     }
 
     saveData("marigold_password_migrated", true);
 
-    console.log("Şifre Migration Tamamlandı");
+    console.log("SHA-256 Migration tamamlandı.");
 }

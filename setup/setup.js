@@ -1,28 +1,35 @@
+// =====================================================
+// Marigold HMS - First Setup Manager
+// =====================================================
+
+const APP_VERSION = "1.0.0";
+
+// -----------------------------------------------------
+// İlk Kurulum Kontrolü
+// -----------------------------------------------------
 window.isFirstSetup = async function () {
 
     if (!window.db) return false;
 
-    const {
-        doc,
-        getDoc
-    } = await import(
+    const { doc, getDoc } = await import(
         "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
     );
 
-    const snapshot =
-        await getDoc(
-            doc(db, "live_data", "settings")
-        );
+    const snap = await getDoc(
+        doc(db, "live_data", "settings")
+    );
 
-    if (!snapshot.exists()) {
-        return true;
-    }
+    if (!snap.exists()) return true;
 
-    const settings = snapshot.data();
+    const data = snap.data();
 
-    return settings.setupCompleted !== true;
+    return data.setupCompleted !== true;
 
 };
+
+// -----------------------------------------------------
+// İlk Kurulumu Tamamla
+// -----------------------------------------------------
 window.completeFirstSetup = async function () {
 
     const hotelName =
@@ -38,46 +45,57 @@ window.completeFirstSetup = async function () {
         document.getElementById("setupPin").value.trim();
 
     if (!hotelName || !adminPass || !receptionPass || !pin) {
+
         alert("Lütfen tüm alanları doldurun.");
         return;
+
     }
 
-    saveData(
-    "marigold_admin_pass",
-    await hashPassword(adminPass)
-);
+    // Bir kez hashle
+    const hashedAdmin =
+        await hashPassword(adminPass);
 
-saveData(
-    "marigold_reception_pass",
-    await hashPassword(receptionPass)
-);
+    const hashedReception =
+        await hashPassword(receptionPass);
 
-saveData(
-    "marigold_pin",
-    await hashPassword(pin)
-);
+    const hashedPin =
+        await hashPassword(pin);
 
-    const {
-        doc,
-        setDoc
-    } = await import(
+    // Local Cache
+    saveData("marigold_admin_pass", hashedAdmin);
+    saveData("marigold_reception_pass", hashedReception);
+    saveData("marigold_pin", hashedPin);
+
+    saveData("marigold_password_migrated", true);
+
+    const { doc, setDoc } = await import(
         "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
     );
 
     await setDoc(
         doc(db, "live_data", "settings"),
         {
-            hotelName: hotelName,
+
+            hotelName,
+
             setupCompleted: true,
-            version: "1.0.0",
+
+            version: APP_VERSION,
+
             installedAt: new Date().toISOString(),
-           adminPass: await hashPassword(adminPass),
-           receptionPass: await hashPassword(receptionPass),
-           pin: await hashPassword(pin),
+
+            adminPass: hashedAdmin,
+
+            receptionPass: hashedReception,
+
+            pin: hashedPin
+
         }
     );
 
-    alert("Kurulum tamamlandı.\n\nSayfa yeniden yüklenecek.");
+    alert(
+        "Kurulum tamamlandı.\n\nProgram yeniden başlatılıyor."
+    );
 
     location.reload();
 

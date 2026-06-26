@@ -1,38 +1,47 @@
+// =====================================================
+// Marigold HMS - SHA-256 Security Upgrade
+// =====================================================
+
+const SECURITY_KEYS = [
+    "marigold_admin_pass",
+    "marigold_reception_pass",
+    "marigold_pin"
+];
+
+// -----------------------------------------------------
+// SHA-256 Güvenlik Yükseltme
+// -----------------------------------------------------
 window.migratePasswordsToHash = async function () {
 
     try {
 
-        const adminPass = loadData("marigold_admin_pass");
-        const receptionPass = loadData("marigold_reception_pass");
-        const pin = loadData("marigold_pin");
+        // Tüm şifreleri oku
+        const values = SECURITY_KEYS.map(key => loadData(key));
 
-        if (!adminPass || !receptionPass || !pin) {
+        if (values.some(value => !value)) {
             alert("Şifreler bulunamadı.");
             return;
         }
 
-        if (
-            isHash(adminPass) &&
-            isHash(receptionPass) &&
-            isHash(pin)
-        ) {
+        // Hepsi zaten hash ise
+        if (values.every(isHash)) {
             alert("Sistem zaten SHA-256 güvenliğinde.");
             return;
         }
 
-        const hashedAdmin =
-            await hashPassword(adminPass);
+        // Hash'e çevir
+        for (let i = 0; i < SECURITY_KEYS.length; i++) {
 
-        const hashedReception =
-            await hashPassword(receptionPass);
+            saveData(
+                SECURITY_KEYS[i],
+                await hashPassword(values[i])
+            );
 
-        const hashedPin =
-            await hashPassword(pin);
+        }
 
-        saveData("marigold_admin_pass", hashedAdmin);
-        saveData("marigold_reception_pass", hashedReception);
-        saveData("marigold_pin", hashedPin);
+        saveData("marigold_password_migrated", true);
 
+        // Firebase'e kaydet
         if (typeof saveSettingsToFirebase === "function") {
             await saveSettingsToFirebase();
         }
@@ -45,29 +54,27 @@ window.migratePasswordsToHash = async function () {
 
     } catch (err) {
 
-        console.error(err);
+        console.error("SHA Upgrade:", err);
 
-        alert("Güvenliğe yükseltme sırasında hata oluştu.");
+        alert("Güvenlik yükseltme sırasında hata oluştu.");
 
     }
 
 };
+
+// -----------------------------------------------------
+// SHA Butonunu Gizle
+// -----------------------------------------------------
 window.hideSecurityUpgradeButton = function () {
 
     const btn = document.getElementById("upgradeSecurityBtn");
+
     if (!btn) return;
 
-    const adminPass = loadData("marigold_admin_pass");
-    const receptionPass = loadData("marigold_reception_pass");
-    const pin = loadData("marigold_pin");
+    const upgraded = SECURITY_KEYS.every(key =>
+        isHash(loadData(key))
+    );
 
-    if (
-        isHash(adminPass) &&
-        isHash(receptionPass) &&
-        isHash(pin)
-    ) {
-        btn.style.display = "none";
-       } else {
-        btn.style.display = "";
-    }
+    btn.style.display = upgraded ? "none" : "";
+
 };

@@ -1,10 +1,20 @@
+// =====================================================
+// Marigold HMS - Version Manager v1.0
+// =====================================================
+
 const APP_VERSION = "1.0.0";
+
+let versionChecked = false;
 
 async function checkVersion() {
 
+    if (versionChecked) return;
+    versionChecked = true;
+
     try {
 
-        if (typeof getDoc !== "function" || typeof doc !== "function") {
+        if (!window.db || typeof getDoc !== "function" || typeof doc !== "function") {
+            console.warn("Version kontrolü atlandı.");
             return;
         }
 
@@ -16,24 +26,40 @@ async function checkVersion() {
 
         const data = snap.data();
 
-        if (!data.version) return;
+        if (!data?.version) return;
 
-        if (data.version !== APP_VERSION) {
+        if (data.version === APP_VERSION) {
+            console.log("Marigold HMS güncel.");
+            return;
+        }
 
-           if (confirm(
-    "Yeni Marigold HMS sürümü bulundu.\n\n" +
-    "Şimdi güncellemek ister misiniz?"
-)) {
-    location.reload(true);
-}
+        console.log(
+            `Yeni sürüm bulundu (${data.version})`
+        );
+
+        const accepted = confirm(
+            "Yeni Marigold HMS sürümü bulundu.\n\n" +
+            "Şimdi güncellemek ister misiniz?"
+        );
+
+        if (accepted) {
+
+            if ("caches" in window) {
+                caches.keys().then(keys => {
+                    keys.forEach(key => caches.delete(key));
+                });
+            }
+
+            location.reload();
 
         }
 
     } catch (err) {
 
-        console.log("Version kontrol hatası:", err);
+        console.error("Version kontrol hatası:", err);
 
     }
 
 }
+
 window.checkVersion = checkVersion;
