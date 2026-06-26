@@ -12,6 +12,12 @@ function renderAdminCards() {
 
     noDataText.style.display = "none";
 
+    globalRoomsPool.sort((a, b) => {
+    const roomA = parseInt(String(a.room).replace(/\D/g, ""));
+    const roomB = parseInt(String(b.room).replace(/\D/g, ""));
+    return roomA - roomB;
+});
+
      globalRoomsPool.forEach(item => {
 
     const accordionId = `pool-${item.id}`;
@@ -369,7 +375,13 @@ function clearRoomMemory() {
     ?.toLowerCase()
     || "";
 
-Object.keys(roomMemory).forEach(roomName => {
+Object.keys(roomMemory)
+.sort((a, b) => {
+    const roomA = parseInt(a.replace(/\D/g, ""));
+    const roomB = parseInt(b.replace(/\D/g, ""));
+    return roomA - roomB;
+})
+.forEach(roomName => {
 
     if (
         searchText &&
