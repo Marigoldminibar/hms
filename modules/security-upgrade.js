@@ -23,10 +23,10 @@ window.migratePasswordsToHash = async function () {
             return;
         }
 
-        // Hepsi zaten hash ise
-        if (values.every(isHash)) {
-            return;
-        }
+        // Hepsi zaten hash ise sessizce çık
+if (values.every(isHash)) {
+    return;
+}
 
         // Hash'e çevir
         for (let i = 0; i < SECURITY_KEYS.length; i++) {
@@ -77,3 +77,35 @@ window.hideSecurityUpgradeButton = function () {
     btn.style.display = upgraded ? "none" : "";
 
 };
+// =====================================================
+// Developer Mode Protection
+// =====================================================
+
+window.devMode = false;
+
+document.addEventListener("contextmenu", function (e) {
+    if (!window.devMode) {
+        e.preventDefault();
+        alert("Lütfen önce giriş yapınız.");
+    }
+});
+
+document.addEventListener("keydown", function (e) {
+
+    if (window.devMode) return;
+
+    if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key.toUpperCase())) ||
+        (e.ctrlKey && e.key.toUpperCase() === "U")
+    ) {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        alert("Lütfen önce giriş yapınız.");
+
+        return false;
+    }
+
+});
