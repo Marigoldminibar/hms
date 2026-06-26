@@ -396,48 +396,43 @@ window.listenApprovedRecordsCollection = async function () {
         }
     );
 };
-window.checkVersion = async function () {
+// ----------------------------------------------------
+// Firebase Settings Listener
+// ----------------------------------------------------
+window.listenSettings = async function () {
 
-    console.log("1) checkVersion başladı");
+    if (!window.db) return;
 
-    try {
+    const {
+        doc,
+        onSnapshot
+    } = await import(
+        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+    );
 
-        if (!window.db) {
-            console.log("2) DB YOK");
-            return;
+    onSnapshot(
+        doc(db, "live_data", "settings"),
+        (snapshot) => {
+
+            if (!snapshot.exists()) return;
+
+            const settings = snapshot.data();
+
+            if (settings.adminPass) {
+                saveData("marigold_admin_pass", settings.adminPass);
+            }
+
+            if (settings.receptionPass) {
+                saveData("marigold_reception_pass", settings.receptionPass);
+            }
+
+            if (settings.pin) {
+                saveData("marigold_pin", settings.pin);
+            }
+
+            console.log("Firebase Settings Güncellendi.");
+
         }
-
-        const { doc, getDoc } = await import(
-            "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
-        );
-
-        console.log("3) Firestore import tamam");
-
-        const ref = doc(db, "live_data", "settings");
-
-        const snap = await getDoc(ref);
-
-        console.log("4) Belge okundu:", snap.exists());
-
-        if (!snap.exists()) return;
-
-        const firebaseVersion = snap.data().version;
-
-        const localVersion = "0.0.0";
-
-        console.log("5) Firebase:", firebaseVersion);
-        console.log("6) Local:", localVersion);
-
-        if (firebaseVersion !== localVersion) {
-
-            alert("TEST: Güncelleme bulundu.");
-
-        }
-
-    } catch (e) {
-
-        console.error("CHECK VERSION HATASI:", e);
-
-    }
+    );
 
 };

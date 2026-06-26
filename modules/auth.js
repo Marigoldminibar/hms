@@ -147,7 +147,7 @@ if (preview) {
     switchScreen("loginScreen");
 }
 
-   function updateCredentials() {
+   async function updateCredentials() {
 
     const newPin =
         document.getElementById("newPin").value;
@@ -158,17 +158,17 @@ if (preview) {
     const newAdminPass =
         document.getElementById("newAdminPass").value;
 
-    if (newPin && newPin.length > 0) {
-        saveData("marigold_pin", newPin);
-    }
+  if (newPin && newPin.length > 0) {
+    saveData("marigold_pin", await hashPassword(newPin));
+}
 
-    if (newReceptionPass && newReceptionPass.length > 0) {
-        saveData("marigold_reception_pass", newReceptionPass);
-    }
+if (newReceptionPass && newReceptionPass.length > 0) {
+    saveData("marigold_reception_pass", await hashPassword(newReceptionPass));
+}
 
-    if (newAdminPass && newAdminPass.length > 0) {
-        saveData("marigold_admin_pass", newAdminPass);
-    }
+if (newAdminPass && newAdminPass.length > 0) {
+    saveData("marigold_admin_pass", await hashPassword(newAdminPass));
+}
 
     if (typeof saveSettingsToFirebase === "function") {
         saveSettingsToFirebase();

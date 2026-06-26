@@ -2,7 +2,7 @@
 // Marigold HMS - Version Manager v1.0
 // =====================================================
 
-const APP_VERSION = "1.0.0";
+window.APP_VERSION = "1.0.0";
 
 let versionChecked = false;
 
