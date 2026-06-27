@@ -63,37 +63,43 @@ productsBase.forEach(p => {
 filterRoomsByFloor();
 loadRoomSpecificProducts();
 
-if (typeof listenDepotParties === "function") {
-    listenDepotParties();
+// Firebase sadece online ise başlat
+if (!window.firebaseOffline) {
+
+    if (typeof listenDepotParties === "function") {
+        listenDepotParties();
+    }
+
+    if (typeof loadFirebasePool === "function") {
+        loadFirebasePool();
+    }
+
+    if (typeof listenFirebasePool === "function") {
+        listenFirebasePool();
+    }
+
+    if (typeof listenRoomSkt === "function") {
+        listenRoomSkt();
+    }
+
+    if (typeof listenRoomMemory === "function") {
+        listenRoomMemory();
+    }
+
+    if (typeof listenSettings === "function") {
+        listenSettings();
+    }
+
+       if (typeof listenApprovedRecordsCollection === "function") {
+        listenApprovedRecordsCollection();
+    }
+
+} else {
+
+    console.log("Offline Mod Aktif - Firebase senkronizasyonu başlatılmadı.");
+
 }
 
-if (typeof loadFirebasePool === "function") {
-    loadFirebasePool();
-}
-
-if (typeof listenFirebasePool === "function") {
-    listenFirebasePool();
-}
-
-if (typeof listenRoomSkt === "function") {
-    listenRoomSkt();
-}
-
-if (typeof listenRoomMemory === "function") {
-    listenRoomMemory();
-}
-
-if (typeof listenSettings === "function") {
-    listenSettings();
-}
-/*
-if (typeof listenApprovedRecords === "function") {
-    listenApprovedRecords();
-}
-*/
-if (typeof listenApprovedRecordsCollection === "function") {
-    listenApprovedRecordsCollection();
-}
 }
 
 /*
