@@ -73,6 +73,9 @@ function saveReplenishPhoto(photoData, roomNumber) {
     roomMemory
 );
 
+if (typeof saveRoomMemoryToFirebase === "function") {
+    saveRoomMemoryToFirebase();
+}
 
 alert(
     `${roomNumber} nolu oda için ikmal fotoğrafı başarıyla kaydedildi!`
