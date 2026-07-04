@@ -44,12 +44,16 @@ function initSystem() {
 
         if (!roomMemory[roomKey]) {
             roomMemory[roomKey] = {
-                fullPhoto: null,
-                fullDate: "",
-                usagePhoto: null,
-                usageDate: "",
-                usageDetails: ""
-            };
+    fullPhoto: null,
+    fullDate: "",
+    fullDetails: "",
+    fullTotal: 0,
+
+    usagePhoto: null,
+    usageDate: "",
+    usageDetails: "",
+    usageTotal: 0
+};
         }
     });
 
@@ -194,6 +198,11 @@ alert("Depo parti stokları kaydedildi.");
         checkStockLevels();
 
        if(isReceptionLoggedIn) {
+       const adminOnlyArea = document.getElementById("adminOnlyArea");
+
+       if (adminOnlyArea) {
+      adminOnlyArea.style.display = "none";
+  }
 
     document.querySelector(".skt-manager-section")
     ?.style.setProperty("display","none");
@@ -220,6 +229,11 @@ alert("Depo parti stokları kaydedildi.");
     }
 
 } else {
+const adminOnlyArea = document.getElementById("adminOnlyArea");
+
+if (adminOnlyArea) {
+    adminOnlyArea.style.display = "block";
+}
 
             document.querySelector(".skt-manager-section")
             ?.style.setProperty("display","block");
@@ -246,10 +260,11 @@ alert("Depo parti stokları kaydedildi.");
     }
     function clearPin() { currentPin = ""; document.getElementById("pinDisplay").innerText = ""; }
     
-   function sendToAdmin() {
-    if (typeof currentAction !== 'undefined' && currentAction === "replenish") {
-        currentAction = ""; 
-        switchScreen('adminDashboard');
+  async function sendToAdmin() {
+
+    if (typeof currentAction !== "undefined" && currentAction === "replenish") {
+        currentAction = "";
+        switchScreen("adminDashboard");
         return;
     }
 
@@ -259,56 +274,97 @@ alert("Depo parti stokları kaydedildi.");
     let itemsSold = [];
 
     productsBase.forEach(p => {
-        let qty = quantities[p.id];
-        if(qty > 0) {
+
+        const qty = quantities[p.id];
+
+        if (qty > 0) {
+
             hasSelection = true;
-            let itemTotal = qty * p.price;
+
+            const itemTotal = qty * p.price;
+
             totalCost += itemTotal;
+
             detailsHtml += `• ${qty} Adet ${p.name} (${itemTotal.toFixed(2)} TL)<br>`;
-            itemsSold.push({ productId: p.id, soldQty: qty });
+
+            itemsSold.push({
+                productId: p.id,
+                soldQty: qty
+            });
+
         }
+
     });
 
-    if(!hasSelection) { alert("Lütfen önce odada eksilen ürünleri giriniz."); return; }
-    
-   let newRecord = {
-    id: Date.now(),
-    room: document.getElementById("roomSelect").value,
-    details: detailsHtml,
-    photo: hasPhoto ? currentPhotoData : null,
-    soldItemsList: itemsSold
-};
-
-addDoc(
-    collection(db, "minibar_records"),
-    {
-        id: newRecord.id,
-        room: newRecord.room,
-        details: newRecord.details,
-        soldItemsList: newRecord.soldItemsList,
-        photo: newRecord.photo,
-        createdAt: new Date().toISOString()
+    if (!hasSelection) {
+        alert("Lütfen önce odada eksilen ürünleri giriniz.");
+        return;
     }
-)
-.then(() => {
 
-    alert(
-        newRecord.room +
-        " verileri Firebase'e gönderildi!"
-    );
+    const room = document.getElementById("roomSelect").value;
 
-    logout();
+   if (!roomMemory[room]) {
 
-})
-.catch(err => {
+    roomMemory[room] = {};
 
-    console.error(err);
+}
 
-    alert(
-        "Firebase kayıt hatası!"
-    );
+roomMemory[room].fullPhoto ??= null;
+roomMemory[room].fullDate ??= "";
+roomMemory[room].fullDetails ??= "";
+roomMemory[room].fullTotal ??= 0;
 
-});
+roomMemory[room].usagePhoto ??= null;
+roomMemory[room].usageDate ??= "";
+roomMemory[room].usageDetails ??= "";
+roomMemory[room].usageTotal ??= 0;
+
+    roomMemory[room].usagePhoto = hasPhoto ? currentPhotoData : null;
+    roomMemory[room].usageDate = new Date().toLocaleString("tr-TR");
+    roomMemory[room].usageDetails = detailsHtml;
+    roomMemory[room].usageTotal = totalCost;
+
+    saveData("marigold_room_memory", roomMemory);
+
+   if (typeof saveRoomMemoryToFirebase === "function") {
+    await saveRoomMemoryToFirebase();
+}
+
+    const newRecord = {
+
+        id: Date.now(),
+
+        room: room,
+
+        details: detailsHtml,
+
+        soldItemsList: itemsSold,
+
+        totalCost: totalCost,
+
+        createdAt: new Date().toISOString()
+
+    };
+
+    addDoc(
+        collection(db, "minibar_records"),
+        newRecord
+    )
+    .then(() => {
+
+        alert(room + " verileri Firebase'e gönderildi.");
+
+        logout();
+
+    })
+    .catch(error => {
+
+        console.error(error);
+
+        alert("Firebase kayıt hatası.");
+
+    });
+
 }
 
 // --- SİSTEMİ BAŞLAT VE GÜVENLİK BEKÇİSİNİ AKTİF ET ---
