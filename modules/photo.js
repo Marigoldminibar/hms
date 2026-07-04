@@ -60,29 +60,69 @@ function takeReplenishPhoto(roomNumber, recordId) {
 }
 
 function saveReplenishPhoto(photoData, roomNumber) {
+
     if (!roomMemory[roomNumber]) {
-        roomMemory[roomNumber] = {};
-    }
+    roomMemory[roomNumber] = {};
+}
+
+roomMemory[roomNumber].fullPhoto ??= null;
+roomMemory[roomNumber].fullDate ??= "";
+roomMemory[roomNumber].fullDetails ??= "";
+roomMemory[roomNumber].fullTotal ??= 0;
+
+roomMemory[roomNumber].usagePhoto ??= null;
+roomMemory[roomNumber].usageDate ??= "";
+roomMemory[roomNumber].usageDetails ??= "";
+roomMemory[roomNumber].usageTotal ??= 0;
+
+    // ------------------------------------
+    // YENİ SON DOLU
+    // ------------------------------------
 
     roomMemory[roomNumber].fullPhoto = photoData;
+
     roomMemory[roomNumber].fullDate =
         new Date().toLocaleString("tr-TR");
 
-    saveData(
-    "marigold_room_memory",
-    roomMemory
-);
-
-if (typeof saveRoomMemoryToFirebase === "function") {
-    saveRoomMemoryToFirebase();
+    if (roomMemory[roomNumber].usageDetails) {
+    roomMemory[roomNumber].fullDetails =
+        roomMemory[roomNumber].usageDetails;
 }
 
-alert(
-    `${roomNumber} nolu oda için ikmal fotoğrafı başarıyla kaydedildi!`
-);
+if (roomMemory[roomNumber].usageTotal > 0) {
+    roomMemory[roomNumber].fullTotal =
+        roomMemory[roomNumber].usageTotal;
+}
+
+    // ------------------------------------
+    // ESKİ SON EKSİK TEMİZLENİR
+    // ------------------------------------
+
+    roomMemory[roomNumber].usagePhoto = null;
+    roomMemory[roomNumber].usageDate = "";
+    roomMemory[roomNumber].usageDetails = "";
+    roomMemory[roomNumber].usageTotal = 0;
+
+    saveData(
+        "marigold_room_memory",
+        roomMemory
+    );
+
+    if (typeof saveRoomMemoryToFirebase === "function") {
+        saveRoomMemoryToFirebase();
+    }
 
     renderAdminCards();
+
     renderApprovedRecords();
+
+    updateDashboardSummary();
+
+    alert(
+        roomNumber +
+        " için yeni dolu fotoğraf kaydedildi."
+    );
+
 }
 function handleFileSelect(event) {
     const file = event.target.files[0];
