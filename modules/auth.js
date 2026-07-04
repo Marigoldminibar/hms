@@ -146,6 +146,14 @@ if (preview) {
 
     filterRoomsByFloor();
 
+   // Admin / Resepsiyon ekranını varsayılan hale döndür
+document.getElementById("adminOnlyArea")?.style.removeProperty("display");
+document.getElementById("passwordSection")?.style.removeProperty("display");
+document.getElementById("approvedPanel")?.style.removeProperty("display");
+document.getElementById("dashboardTools")?.style.removeProperty("display");
+document.querySelector(".skt-manager-section")
+    ?.style.removeProperty("display");
+
     hasPhoto = false;
     currentPhotoData = "";
 
