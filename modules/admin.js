@@ -20,6 +20,15 @@ function renderAdminCards() {
 
      globalRoomsPool.forEach(item => {
 
+const memory = roomMemory[item.room];
+
+if (!memory) {
+    return;
+}
+
+const fullPhoto = memory.fullPhoto;
+const usagePhoto = memory.usagePhoto;
+
     const accordionId = `pool-${item.id}`;
 
     let previewHtml = "<ul>";
@@ -91,7 +100,7 @@ style="margin-left:18px;"
                 </div>
 
                <div class="log-item" style="padding-left:10px; color:#444;">
-    ${item.details}
+    ${memory.usageDetails || "-"}
 </div>
 
 <div class="log-item"
@@ -101,7 +110,8 @@ font-weight:bold;
 color:#c9a227;
 margin-top:8px;
 ">
-💰 TOPLAM TUTAR: ${totalPrice.toFixed(2)} TL
+💰 TOPLAM TUTAR:
+${Number(memory.usageTotal || 0).toFixed(2)} TL
 </div>
 
 ${!isReceptionLoggedIn ? `
@@ -111,9 +121,68 @@ ${!isReceptionLoggedIn ? `
 </div>
 ` : ``}
 
-                ${item.photo ? `
-                    <img src="${item.photo}" style="width:100%; margin-top:10px; border-radius:10px;">
-                ` : ""}
+<div style="
+display:flex;
+justify-content:center;
+align-items:flex-start;
+gap:12px;
+margin-top:12px;
+flex-wrap:nowrap;
+">
+
+    ${usagePhoto ? `
+        <div style="text-align:center; flex:1;">
+            <div style="
+                font-size:11px;
+                font-weight:bold;
+                color:#d32f2f;
+                margin-bottom:6px;
+            ">
+                🔴 Son Eksik
+            </div>
+
+            <img
+                src="${usagePhoto}"
+                style="
+                    width:90px;
+                    height:90px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    border:2px solid #ddd;
+                    display:block;
+                    margin:auto;
+                "
+            >
+        </div>
+    ` : ""}
+
+    ${fullPhoto ? `
+        <div style="text-align:center; flex:1;">
+            <div style="
+                font-size:11px;
+                font-weight:bold;
+                color:var(--marigold-gold);
+                margin-bottom:6px;
+            ">
+                🟢 Son Dolu
+            </div>
+
+            <img
+                src="${fullPhoto}"
+                style="
+                    width:90px;
+                    height:90px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    border:2px solid var(--marigold-gold);
+                    display:block;
+                    margin:auto;
+                "
+            >
+        </div>
+    ` : ""}
+
+</div>
 
                 ${!isReceptionLoggedIn ? `
 <div style="display:flex; gap:10px; margin-top:15px;">
@@ -134,18 +203,25 @@ ${!isReceptionLoggedIn ? `
 }
 
 function approveAction(recordId) {
+
     const currentRecord = globalRoomsPool.find(
         item => item.id === recordId
     );
 
     if (!currentRecord) return;
 
+    // -------------------------------------------------
+    // STOK KONTROLÜ
+    // -------------------------------------------------
+
     for (const soldItem of currentRecord.soldItemsList) {
+
         const totalStock = depotParties
             .filter(p => p.productId === soldItem.productId)
             .reduce((sum, p) => sum + (Number(p.qty) || 0), 0);
 
         if (totalStock < soldItem.soldQty) {
+
             const product = productsBase.find(
                 p => p.id === soldItem.productId
             );
@@ -158,131 +234,168 @@ function approveAction(recordId) {
         }
     }
 
+    // -------------------------------------------------
+    // FIFO
+    // -------------------------------------------------
+
     currentRecord.soldItemsList.forEach(soldItem => {
+
         const matchingParties = depotParties
             .filter(
-                p => p.productId === soldItem.productId && p.qty > 0
+                p =>
+                    p.productId === soldItem.productId &&
+                    p.qty > 0
             )
             .sort(
-                (a, b) => new Date(a.expiry) - new Date(b.expiry)
+                (a, b) =>
+                    new Date(a.expiry) -
+                    new Date(b.expiry)
             );
 
-        let remainingToDeduct = soldItem.soldQty;
+        let remaining = soldItem.soldQty;
 
         for (const party of matchingParties) {
-            if (remainingToDeduct <= 0) break;
 
-            if (party.qty >= remainingToDeduct) {
-                party.qty -= remainingToDeduct;
-                remainingToDeduct = 0;
+            if (remaining <= 0) break;
+
+            if (party.qty >= remaining) {
+
+                party.qty -= remaining;
+                remaining = 0;
+
             } else {
-                remainingToDeduct -= party.qty;
+
+                remaining -= party.qty;
                 party.qty = 0;
+
             }
+
         }
-       const newestParty = depotParties
+
+        const newestParty = depotParties
             .filter(
-                    p => p.productId === soldItem.productId && p.qty > 0
-              )
-               .sort(
-                    (a, b) => new Date(a.expiry) - new Date(b.expiry)
+                p =>
+                    p.productId === soldItem.productId &&
+                    p.qty > 0
+            )
+            .sort(
+                (a, b) =>
+                    new Date(a.expiry) -
+                    new Date(b.expiry)
             )[0];
 
         if (newestParty) {
-               if (!roomSktDatabase[currentRecord.room]) {
-                     roomSktDatabase[currentRecord.room] = {};
-               }
 
-               roomSktDatabase[currentRecord.room][soldItem.productId] =
-                         newestParty.expiry;
+            if (!roomSktDatabase[currentRecord.room]) {
+                roomSktDatabase[currentRecord.room] = {};
+            }
+
+            roomSktDatabase[currentRecord.room][soldItem.productId] =
+                newestParty.expiry;
+
         }
+
     });
-    
-   saveData("marigold_depot_parties_v2", depotParties);
 
-if (typeof saveDepotPartiesToFirebase === "function") {
-    saveDepotPartiesToFirebase();
-}
-
-saveData(
-    "marigold_rooms_skt_db_v2",
-    roomSktDatabase
-);
-    const approvedRecord = {
-    ...currentRecord,
-    photo: currentRecord.photo,
-    approvedDate: new Date().toLocaleString("tr-TR")
-};
-
-approvedRecords.push(approvedRecord);
-    if (
-    typeof saveApprovedRecordToFirebase === "function"
-) {
-    saveApprovedRecordToFirebase(
-        approvedRecord
+    saveData(
+        "marigold_depot_parties_v2",
+        depotParties
     );
-}
 
-    if (!roomMemory[currentRecord.room]) {
-        roomMemory[currentRecord.room] = {};
+    if (typeof saveDepotPartiesToFirebase === "function") {
+        saveDepotPartiesToFirebase();
     }
 
-    roomMemory[currentRecord.room].usagePhoto = currentRecord.photo;
-    roomMemory[currentRecord.room].usageDate = new Date().toLocaleString("tr-TR");
-    roomMemory[currentRecord.room].usageDetails = currentRecord.details;
-
-    saveData("marigold_room_memory", roomMemory);
-
-saveData("marigold_approved", approvedRecords);
-
-if (typeof saveRoomMemoryToFirebase === "function") {
-    saveRoomMemoryToFirebase();
-}
-
-if (typeof saveRoomSktToFirebase === "function") {
-    saveRoomSktToFirebase();
-}
-
-    globalRoomsPool = globalRoomsPool.filter(
-        item => item.id !== recordId
+    saveData(
+        "marigold_rooms_skt_db_v2",
+        roomSktDatabase
     );
 
-    saveData("marigold_pool", globalRoomsPool);
+    if (typeof saveRoomSktToFirebase === "function") {
+        saveRoomSktToFirebase();
+    }
 
-if (currentRecord.firebaseId) {
+    // -------------------------------------------------
+    // SADECE RAPOR KAYDI
+    // FOTOĞRAF YOK
+    // -------------------------------------------------
 
-    import(
-        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
-    )
-    .then(({ deleteDoc, doc }) => {
+    const approvedRecord = {
 
-        return deleteDoc(
-            doc(
-                db,
-                "minibar_records",
-                currentRecord.firebaseId
-            )
+        id: currentRecord.id,
+
+        room: currentRecord.room,
+
+        details: currentRecord.details,
+
+        soldItemsList: currentRecord.soldItemsList,
+
+        totalCost: currentRecord.totalCost,
+
+        approvedDate: new Date().toLocaleString("tr-TR")
+
+    };
+
+    approvedRecords.push(approvedRecord);
+
+    saveData(
+        "marigold_approved",
+        approvedRecords
+    );
+
+    if (typeof saveApprovedRecordToFirebase === "function") {
+        saveApprovedRecordToFirebase(
+            approvedRecord
+        );
+    }
+
+    // -------------------------------------------------
+    // ODA HAFIZASINA DOKUNMA
+    // FOTOĞRAF DEĞİŞTİRME
+    // -------------------------------------------------
+
+    globalRoomsPool =
+        globalRoomsPool.filter(
+            item => item.id !== recordId
         );
 
-    })
-    .catch(error => {
+    saveData(
+        "marigold_pool",
+        globalRoomsPool
+    );
 
-        console.error(
-            "Firebase Silme Hatası:",
-            error
-        );
+    if (currentRecord.firebaseId) {
 
-    });
+        import(
+            "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+        )
+        .then(({ deleteDoc, doc }) => {
 
-}
+            return deleteDoc(
+                doc(
+                    db,
+                    "minibar_records",
+                    currentRecord.firebaseId
+                )
+            );
 
-renderAdminCards();
-renderApprovedRecords();
-buildSktManagerForAdmin();
-updateDashboardSummary();
-checkStockLevels();
+        })
+        .catch(console.error);
 
-    alert(`${currentRecord.room} onaylandı, stoklar güncellendi.`);
+    }
+
+    renderAdminCards();
+
+    renderApprovedRecords();
+
+    buildSktManagerForAdmin();
+
+    updateDashboardSummary();
+
+    checkStockLevels();
+
+    alert(currentRecord.room + " onaylandı.");
+
 }
 
 function rejectAction(id) {
@@ -440,35 +553,108 @@ style="
                     ${item.fullDate || "-"}
                 </div>
 
-                <div style="margin-top:10px;">
-                    <strong>📦 Son Eksikler:</strong>
-                </div>
+<div style="margin-top:10px;">
+    <strong>📦 Son Eksikler</strong>
+</div>
 
-                <div style="margin-top:5px;">
-                    ${item.usageDetails || "-"}
-                </div>
+<div style="margin-top:5px;">
+    ${item.usageDetails || "-"}
+</div>
 
-                <div style="display:flex; gap:10px; margin-top:10px;">
+<div style="
+margin-top:6px;
+font-weight:bold;
+color:#d32f2f;
+">
+💰 Toplam:
+${(item.usageTotal || 0).toFixed(2)} TL
+</div>
 
-                    ${item.usagePhoto ? `
-                        <div style="flex:1;">
-                            <img
-                                src="${item.usagePhoto}"
-                                style="width:100%; border-radius:10px; border:2px solid #eee;"
-                            >
-                        </div>
-                    ` : ""}
+<hr style="margin:10px 0;">
 
-                    ${item.fullPhoto ? `
-                        <div style="flex:1;">
-                            <img
-                                src="${item.fullPhoto}"
-                                style="width:100%; border-radius:10px; border:2px solid var(--marigold-gold);"
-                            >
-                        </div>
-                    ` : ""}
+<div style="margin-top:5px;">
+    <strong>📦 Son Dolu</strong>
+</div>
 
-                </div>
+<div style="margin-top:5px;">
+    ${item.fullDetails || "-"}
+</div>
+
+<div style="
+margin-top:6px;
+font-weight:bold;
+color:var(--marigold-gold);
+">
+💰 Toplam:
+${(item.fullTotal || 0).toFixed(2)} TL
+</div>
+
+               <div style="
+display:flex;
+justify-content:center;
+align-items:flex-start;
+gap:12px;
+margin-top:12px;
+flex-wrap:nowrap;
+">
+
+    ${item.fullPhoto ? `
+        <div style="text-align:center; flex:1;">
+            <div style="
+                font-size:11px;
+                font-weight:bold;
+                margin-bottom:6px;
+                color:var(--marigold-gold);
+            ">
+                🟢 Son Dolu
+            </div>
+
+            <img
+                src="${item.fullPhoto}"
+                style="
+                    width:90px;
+                    height:90px;
+                    max-width:90px;
+                    max-height:90px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    border:2px solid var(--marigold-gold);
+                    display:block;
+                    margin:auto;
+                "
+            >
+        </div>
+    ` : ""}
+
+   ${item.usagePhoto ? `
+        <div style="text-align:center; flex:1;">
+            <div style="
+                font-size:11px;
+                font-weight:bold;
+                margin-bottom:6px;
+                color:#d32f2f;
+            ">
+                🔴 Son Eksik
+            </div>
+
+            <img
+                src="${item.usagePhoto}"
+                style="
+                    width:90px;
+                    height:90px;
+                    max-width:90px;
+                    max-height:90px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    border:2px solid #ddd;
+                    display:block;
+                    margin:auto;
+                "
+            >
+        </div>
+    ` : ""}
+
+</div>
 
                 <button
                     onclick="takeReplenishPhoto('${roomName}', '${roomName}')"
