@@ -177,19 +177,24 @@ alert("Depo parti stokları kaydedildi.");
 
    function switchScreen(screenId) {
 
-    document.querySelectorAll('.screen').forEach(
-        s => s.classList.remove('active')
+    // Önce yetki kontrolü
+    if (
+        screenId === "adminDashboard" &&
+        !isAdminLoggedIn &&
+        !isReceptionLoggedIn
+    ) {
+        alert("Lütfen önce yönetici girişi yapın.");
+        return;
+    }
+
+    document.querySelectorAll(".screen").forEach(
+        s => s.classList.remove("active")
     );
 
     document.getElementById(screenId)
-        .classList.add('active');
+        .classList.add("active");
 
-    if(screenId === 'adminDashboard') {
-
-        if (!isAdminLoggedIn && !isReceptionLoggedIn) {
-            alert("Lütfen önce yönetici girişi yapın.");
-            return;
-        }
+    if (screenId === "adminDashboard") {
 
         renderAdminCards();
         renderApprovedRecords();
