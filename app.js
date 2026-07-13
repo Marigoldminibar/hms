@@ -90,21 +90,15 @@ if (typeof listenRoomMemory === "function") {
 if (typeof listenSettings === "function") {
     listenSettings();
 }
-/*
-if (typeof listenApprovedRecords === "function") {
-    listenApprovedRecords();
-}
-*/
+
 if (typeof listenApprovedRecordsCollection === "function") {
     listenApprovedRecordsCollection();
 }
+if (typeof listenSalesHistory === "function") {
+    listenSalesHistory();
+}
 }
 
-/*
-if (typeof loadFirebasePool === "function") {
-    loadFirebasePool();
-}
-*/
     // YÖNETİCİNİN TÜM LİSTEYİ ELLE DÜZENLEYİP KAYDETMESİ
     function saveAllDepotParties() {
     for (const party of depotParties) {
