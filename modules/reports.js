@@ -7,7 +7,7 @@ function updateDashboardSummary() {
     const productStats = {};
     const roomStats = {};
 
-    (loadData("marigold_approved") || []).forEach(record => {
+    (loadData("marigold_sales_history") || []).forEach(record => {
         if (!record.approvedDate?.startsWith(today) || !record.soldItemsList) {
             return;
         }
@@ -30,22 +30,19 @@ function updateDashboardSummary() {
         });
     });
 
-    let topProduct = "-";
+let waitingReplenish = 0;
 
-    if (Object.keys(productStats).length) {
-        const bestId = Object.keys(productStats).reduce((a, b) =>
-            productStats[a] > productStats[b] ? a : b
-        );
+approvedRecords.forEach(record => {
+    const room = roomMemory[record.room];
 
-        const product = productsBase.find(
-            p => p.id === bestId
-        );
-
-        if (product) {
-            topProduct =
-                `${product.name} (${productStats[bestId]} adet)`;
-        }
+    if (
+        room &&
+        room.usagePhoto &&
+        room.usagePhoto !== ""
+    ) {
+        waitingReplenish++;
     }
+});
 
     let topRoom = "-";
 
@@ -60,12 +57,14 @@ function updateDashboardSummary() {
 
     const qtyEl = document.getElementById("todayTotalQty");
     const revEl = document.getElementById("todayTotalRevenue");
-    const topEl = document.getElementById("topSellingProduct");
+    const topEl = document.getElementById("waitingReplenish");
     const roomEl = document.getElementById("topRoomSales");
 
     if (qtyEl) qtyEl.innerText = todayQty;
     if (revEl) revEl.innerText = `${todayRevenue} TL`;
-    if (topEl) topEl.innerText = topProduct;
+    if (topEl) {
+    topEl.innerText = `${waitingReplenish} Oda`;
+}
     if (roomEl) roomEl.innerText = topRoom;
 }
 
