@@ -131,8 +131,14 @@
             <h3>📸 İkmal (Dolu) Fotoğrafı Yükle</h3>
             <p style="font-size: 13px; color: #666;">Bilgisayardan minibar fotoğrafını seçin:</p>
             
-           <input type="file" id="fileInputReplenish" accept="image/*" onchange="handleFileSelect(event)" style="margin-top:15px;" onclick="this.value=null;">
-            
+          <input
+type="file"
+id="fileInputReplenish"
+accept="image/*"
+capture="environment"
+onchange="handleFileSelect(event)"
+style="margin-top:15px;"
+onclick="this.value=null;">
             <button class="btn" style="margin-top:20px; width:100%; background:#6c757d;" onclick="switchScreen('staffScreen')">İptal / Geri Dön</button>
         </div>
     </div>
@@ -170,10 +176,10 @@
         <div id="todayTotalRevenue" style="font-size:11px; font-weight:bold;">0 TL</div>
     </div>
 
-    <div style="background:#f8f8f8; border:1px solid #ddd; border-radius:5px; text-align:center; padding:5px;">
-        <div style="font-size:10px;">⭐ En Çok Satan</div>
-        <div id="topSellingProduct" style="font-size:11px; font-weight:bold;">-</div>
-    </div>
+<div style="background:#f8f8f8; border:1px solid #ddd; border-radius:5px; text-align:center; padding:5px;">
+    <div style="font-size:10px;">📷 Bekleyen İkmal</div>
+    <div id="waitingReplenish" style="font-size:11px; font-weight:bold;">0 Oda</div>
+</div>
 
 </div>
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;">
@@ -379,6 +385,7 @@ style="
 <script src="modules/reports.js"></script>
 <script src="modules/stock.js"></script>
 <script src="modules/photo.js"></script>
+<script src="modules/lightbox.js"></script>
 <script src="modules/admin.js"></script>
 <script src="modules/staff.js"></script>
 <script src="modules/auth.js"></script>
