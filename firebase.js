@@ -311,49 +311,22 @@ window.saveApprovedRecordToFirebase = async function (record) {
     if (!window.db) return;
 
     const {
-        addDoc,
-        collection
-    } = await import(
-        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
-    );
+    doc,
+    setDoc
+} = await import(
+    "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+);
 
-    await addDoc(
-        collection(db, "approved_records"),
-        record
-    );
+await setDoc(
+    doc(db, "approved_records", record.room),
+    record
+);
 
     console.log(
         "Approved Record Collection Kaydedildi."
     );
 };
-window.saveApprovedRecordsToFirebase = async function () {
 
-    if (!window.db) return;
-
-    console.log(
-        "Approved Records Sayısı:",
-        approvedRecords.length
-    );
-
-    const {
-        doc,
-        setDoc
-    } = await import(
-        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
-    );
-
-    await setDoc(
-        doc(db, "live_data", "approved_records"),
-        {
-            data: approvedRecords,
-            updatedAt: new Date().toISOString()
-        }
-    );
-
-    console.log(
-        "Approved Records Firebase güncellendi."
-    );
-};
 
 window.listenApprovedRecordsCollection = async function () {
 
@@ -396,6 +369,140 @@ window.listenApprovedRecordsCollection = async function () {
         }
     );
 };
+
+window.listenSalesHistory = async function () {
+
+    if (!window.db) return;
+
+    const {
+        collection,
+        onSnapshot
+    } = await import(
+        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+    );
+
+    onSnapshot(
+        collection(db, "sales_history"),
+        (snapshot) => {
+
+            const salesHistory = [];
+
+            snapshot.forEach(doc => {
+                salesHistory.push({
+                    firebaseId: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            saveData(
+                "marigold_sales_history",
+                salesHistory
+            );
+
+            updateDashboardSummary();
+
+            console.log(
+                "Sales History Güncellendi:",
+                salesHistory.length
+            );
+        }
+    );
+
+};
+
+window.clearApprovedRecordsFirebase = async function () {
+
+    if (!window.db) return;
+
+    const {
+        collection,
+        getDocs,
+        deleteDoc,
+        doc
+    } = await import(
+        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+    );
+
+    async function clearCollection(collectionName) {
+
+        const snapshot = await getDocs(
+            collection(db, collectionName)
+        );
+
+        const promises = [];
+
+        snapshot.forEach(item => {
+            promises.push(
+                deleteDoc(
+                    doc(db, collectionName, item.id)
+                )
+            );
+        });
+
+        await Promise.all(promises);
+    }
+
+    await clearCollection("approved_records");
+    await clearCollection("sales_history");
+
+    console.log("Approved Records ve Sales History temizlendi.");
+};
+
+window.clearRoomMemoryFirebase = async function () {
+
+    if (!window.db) return;
+
+    const {
+        doc,
+        setDoc
+    } = await import(
+        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+    );
+
+    await setDoc(
+        doc(db, "live_data", "room_memory"),
+        {
+            data: {},
+            updatedAt: new Date().toISOString()
+        }
+    );
+
+    console.log("Room Memory Firebase temizlendi.");
+};
+
+window.clearPoolFirebase = async function () {
+
+    if (!window.db) return;
+
+    const {
+        collection,
+        getDocs,
+        deleteDoc,
+        doc
+    } = await import(
+        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+    );
+
+    const snapshot = await getDocs(
+        collection(db, "minibar_records")
+    );
+
+    const promises = [];
+
+    snapshot.forEach(item => {
+        promises.push(
+            deleteDoc(
+                doc(db, "minibar_records", item.id)
+            )
+        );
+    });
+
+    await Promise.all(promises);
+
+    console.log("Firebase Havuz temizlendi.");
+
+};
+
 // ----------------------------------------------------
 // Firebase Settings Listener
 // ----------------------------------------------------
@@ -434,5 +541,25 @@ window.listenSettings = async function () {
 
         }
     );
+
+};
+
+window.saveSalesHistoryToFirebase = async function(record) {
+
+    if (!window.db) return;
+
+    const {
+        addDoc,
+        collection
+    } = await import(
+        "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+    );
+
+    await addDoc(
+        collection(db, "sales_history"),
+        record
+    );
+
+    console.log("Sales History Kaydedildi.");
 
 };
