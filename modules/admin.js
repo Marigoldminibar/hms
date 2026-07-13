@@ -142,6 +142,7 @@ flex-wrap:nowrap;
             </div>
 
             <img
+               onclick="openLightbox(this.src)"
                 src="${usagePhoto}"
                 style="
                     width:90px;
@@ -151,6 +152,7 @@ flex-wrap:nowrap;
                     border:2px solid #ddd;
                     display:block;
                     margin:auto;
+                    cursor:zoom-in;
                 "
             >
         </div>
@@ -169,6 +171,7 @@ flex-wrap:nowrap;
 
             <img
                 src="${fullPhoto}"
+                onclick="openLightbox(this.src)"
                 style="
                     width:90px;
                     height:90px;
@@ -177,6 +180,7 @@ flex-wrap:nowrap;
                     border:2px solid var(--marigold-gold);
                     display:block;
                     margin:auto;
+                    cursor:zoom-in;
                 "
             >
         </div>
@@ -336,18 +340,23 @@ function approveAction(recordId) {
 
     };
 
-    approvedRecords.push(approvedRecord);
+    approvedRecords = approvedRecords.filter(
+    r => r.room !== approvedRecord.room
+);
+
+approvedRecords.push(approvedRecord);
 
     saveData(
         "marigold_approved",
         approvedRecords
     );
 
-    if (typeof saveApprovedRecordToFirebase === "function") {
-        saveApprovedRecordToFirebase(
-            approvedRecord
-        );
-    }
+ if (typeof saveApprovedRecordToFirebase === "function") {
+    saveApprovedRecordToFirebase(approvedRecord);
+}
+if (typeof saveSalesHistoryToFirebase === "function") {
+    saveSalesHistoryToFirebase(approvedRecord);
+}
 
     // -------------------------------------------------
     // ODA HAFIZASINA DOKUNMA
@@ -398,64 +407,114 @@ function approveAction(recordId) {
 
 }
 
-function rejectAction(id) {
+async function rejectAction(recordId) {
+
     if (!confirm("Bu kaydı reddetmek istediğinize emin misiniz?")) {
         return;
     }
 
-    globalRoomsPool = globalRoomsPool.filter(
-        item => item.id !== id
+    const currentRecord = globalRoomsPool.find(
+        item => item.id === recordId
     );
 
-    saveData("marigold_pool", globalRoomsPool);
+    if (!currentRecord) return;
+
+    if (currentRecord.firebaseId) {
+
+        const {
+            deleteDoc,
+            doc
+        } = await import(
+            "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js"
+        );
+
+        await deleteDoc(
+            doc(
+                db,
+                "minibar_records",
+                currentRecord.firebaseId
+            )
+        );
+
+    }
+
+    globalRoomsPool =
+        globalRoomsPool.filter(
+            item => item.id !== recordId
+        );
+
+    saveData(
+        "marigold_pool",
+        globalRoomsPool
+    );
 
     renderAdminCards();
 
     alert("İşlem reddedildi.");
 }
 
-function clearApprovedHistory() {
+async function clearApprovedHistory() {
     if (!confirm(
         "Tüm onaylı kayıt geçmişini silmek istediğinize emin misiniz?"
     )) {
         return;
     }
 
-    approvedRecords = [];
-
-    saveData(
-        "marigold_approved",
-        approvedRecords
-    );
-
-    renderApprovedRecords();
-    updateDashboardSummary();
-
-    alert("Geçmiş başarıyla temizlendi.");
+   if (typeof clearApprovedRecordsFirebase === "function") {
+    await clearApprovedRecordsFirebase();
 }
 
-function clearPoolHistory() {
+approvedRecords = [];
+
+saveData(
+    "marigold_approved",
+    approvedRecords
+);
+
+renderApprovedRecords();
+updateDashboardSummary();
+
+alert("Geçmiş başarıyla temizlendi.");
+}
+
+async function clearPoolHistory() {
+
     if (!confirm("Onay havuzundaki tüm kayıtları silmek istiyor musunuz?")) {
         return;
     }
 
+    if (typeof clearPoolFirebase === "function") {
+        await clearPoolFirebase();
+    }
+
     globalRoomsPool = [];
 
-    saveData("marigold_pool", globalRoomsPool);
+    saveData(
+        "marigold_pool",
+        globalRoomsPool
+    );
 
     renderAdminCards();
 
     alert("Onay havuzu temizlendi.");
 }
 
-function clearRoomMemory() {
+async function clearRoomMemory() {
+
     if (!confirm("Tüm oda hafızasını silmek istiyor musunuz?")) {
         return;
     }
 
+    if (typeof clearRoomMemoryFirebase === "function") {
+        await clearRoomMemoryFirebase();
+    }
+
     roomMemory = {};
 
-    saveData("marigold_room_memory", roomMemory);
+    saveData(
+        "marigold_room_memory",
+        roomMemory
+    );
 
     renderApprovedRecords();
 
@@ -475,12 +534,11 @@ function clearRoomMemory() {
     const today =
         new Date().toLocaleDateString("tr-TR");
 
-    if (Object.keys(roomMemory).length === 0) {
-        container.innerHTML =
-            "<div style='color:#999;padding:10px;'>Henüz oda hafızası yok.</div>";
-
-        return;
-    }
+   if (approvedRecords.length === 0) {
+    container.innerHTML =
+        "<div style='color:#999;padding:10px;'>Henüz onaylanmış kayıt yok.</div>";
+    return;
+}
 
     const searchText =
     document.getElementById("roomSearch")
@@ -488,13 +546,15 @@ function clearRoomMemory() {
     ?.toLowerCase()
     || "";
 
-Object.keys(roomMemory)
+approvedRecords
 .sort((a, b) => {
-    const roomA = parseInt(a.replace(/\D/g, ""));
-    const roomB = parseInt(b.replace(/\D/g, ""));
+    const roomA = parseInt(String(a.room).replace(/\D/g, ""));
+    const roomB = parseInt(String(b.room).replace(/\D/g, ""));
     return roomA - roomB;
 })
-.forEach(roomName => {
+.forEach(record => {
+
+    const roomName = record.room;
 
     if (
         searchText &&
@@ -502,18 +562,15 @@ Object.keys(roomMemory)
     ) {
         return;
     }
-        const item = roomMemory[roomName];
+        const item = roomMemory[roomName] || {};
 
-        if (
-            onlyToday &&
-            (!item.usageDate || !item.usageDate.startsWith(today))
-        ) {
-            return;
-        }
+       if (
+    onlyToday &&
+    (!record.approvedDate || !record.approvedDate.startsWith(today))
+) {
+    return;
+}
 
-        if (!item.usagePhoto && !item.fullPhoto) {
-            return;
-        }
 
         container.innerHTML += `
             <div class="notification-card">
@@ -544,8 +601,8 @@ style="
 <div class="hidden">
 
                 <div style="margin-top:8px;font-size:13px;">
-                    <strong>📅 Son Eksik:</strong><br>
-                    ${item.usageDate || "-"}
+                    <strong>📅 Onay Tarihi:</strong><br>
+                     ${record.approvedDate || "-"}
                 </div>
 
                 <div style="margin-top:8px;font-size:13px;">
@@ -554,11 +611,11 @@ style="
                 </div>
 
 <div style="margin-top:10px;">
-    <strong>📦 Son Eksikler</strong>
+    <strong>📦 Onaylanan Ürünler</strong>
 </div>
 
 <div style="margin-top:5px;">
-    ${item.usageDetails || "-"}
+    ${record.details || "-"}
 </div>
 
 <div style="
@@ -566,8 +623,8 @@ margin-top:6px;
 font-weight:bold;
 color:#d32f2f;
 ">
-💰 Toplam:
-${(item.usageTotal || 0).toFixed(2)} TL
+💰 Onay Tutarı:
+${Number(record.totalCost || 0).toFixed(2)} TL
 </div>
 
 <hr style="margin:10px 0;">
@@ -611,6 +668,7 @@ flex-wrap:nowrap;
 
             <img
                 src="${item.fullPhoto}"
+                onclick="openLightbox(this.src)"
                 style="
                     width:90px;
                     height:90px;
@@ -621,6 +679,7 @@ flex-wrap:nowrap;
                     border:2px solid var(--marigold-gold);
                     display:block;
                     margin:auto;
+                    cursor:zoom-in;
                 "
             >
         </div>
@@ -639,6 +698,7 @@ flex-wrap:nowrap;
 
             <img
                 src="${item.usagePhoto}"
+                onclick="openLightbox(this.src)"
                 style="
                     width:90px;
                     height:90px;
@@ -649,6 +709,7 @@ flex-wrap:nowrap;
                     border:2px solid #ddd;
                     display:block;
                     margin:auto;
+                    cursor:zoom-in;
                 "
             >
         </div>
