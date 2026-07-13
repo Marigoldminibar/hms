@@ -266,3 +266,59 @@ button {
 .hidden{
     display:none;
 }
+
+#lightboxOverlay{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(0,0,0,.95);
+
+    display:none;
+
+    justify-content:center;
+
+    align-items:center;
+
+    z-index:999999;
+
+}
+
+#lightboxOverlay.show{
+
+    display:flex;
+
+}
+
+#lightboxImage{
+
+    max-width:95vw;
+
+    max-height:95vh;
+
+    border-radius:12px;
+
+    box-shadow:0 0 30px rgba(0,0,0,.6);
+
+}
+
+#lightboxClose{
+
+    position:absolute;
+
+    top:20px;
+
+    right:30px;
+
+    color:#fff;
+
+    font-size:42px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+
+    user-select:none;
+
+}
